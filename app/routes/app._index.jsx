@@ -122,7 +122,7 @@ export const action = async ({ request }) => {
           userErrors { field message }
         }
       }`,
-      { variables: { input: { firstName: formData.get("firstName"), lastName: formData.get("lastName") || "", phone: formData.get("phone") || null, email: formData.get("email") || null } } }
+      { variables: { input: { firstName: formData.get("firstName"), lastName: formData.get("lastName") || "", phone: formData.get("phone") || null, email: formData.get("email") || null, addresses: formData.get("address") ? [{ address1: formData.get("address") }] : [] } } }
     );
     const data = await res.json();
     const customer = data.data.customerCreate.customer;
@@ -182,10 +182,11 @@ export default function Index() {
   const [drawerProduct, setDrawerProduct] = useState(null);
   const [selectedOptions, setSelectedOptions] = useState({});
 
-  const [newFirst, setNewFirst] = useState("");
-  const [newLast, setNewLast] = useState("");
-  const [newPhone, setNewPhone] = useState("");
-  const [newEmail, setNewEmail] = useState("");
+const [newFirst, setNewFirst] = useState("");
+const [newLast, setNewLast] = useState("");
+const [newPhone, setNewPhone] = useState("");
+const [newEmail, setNewEmail] = useState("");
+const [newAddress, setNewAddress] = useState("");
 
   const isPlacing = fetcher.state === "submitting" && fetcher.formData?.get("intent") === "placeOrder";
   const isCreating = fetcher.state === "submitting" && fetcher.formData?.get("intent") === "createCustomer";
@@ -259,10 +260,11 @@ export default function Index() {
     formData.append("lastName", newLast);
     formData.append("phone", newPhone);
     formData.append("email", newEmail);
+    formData.append("address", newAddress);
     fetcher.submit(formData, { method: "POST" });
   };
 
- const clearCart = () => {
+const clearCart = () => {
     setCart([]); 
     setSelectedCustomer(null); 
     setCustomerSearch("");
@@ -270,6 +272,7 @@ export default function Index() {
     setNewLast(""); 
     setNewPhone(""); 
     setNewEmail("");
+    setNewAddress("");
     setShowSuccess(false);
     fetcher.load("/app");
   };
@@ -446,7 +449,7 @@ export default function Index() {
                 ) : (
                   <>
                     <h4 style={{ margin: "0 0 12px", fontWeight: "600" }}>New Customer</h4>
-                    {[{ label: "First Name *", val: newFirst, set: setNewFirst }, { label: "Last Name", val: newLast, set: setNewLast }, { label: "Phone", val: newPhone, set: setNewPhone }, { label: "Email", val: newEmail, set: setNewEmail }].map((field) => (
+                    {[{ label: "First Name *", val: newFirst, set: setNewFirst }, { label: "Last Name", val: newLast, set: setNewLast }, { label: "Phone", val: newPhone, set: setNewPhone }, { label: "Email", val: newEmail, set: setNewEmail }, { label: "Address (optional)", val: newAddress, set: setNewAddress }].map((field) => (
                       <input key={field.label} type="text" placeholder={field.label} value={field.val} onChange={(e) => field.set(e.target.value)}
                         style={{ width: "100%", padding: "10px 12px", border: "1px solid #e0e0e0", borderRadius: "8px", fontSize: "14px", marginBottom: "10px", boxSizing: "border-box" }}
                       />
