@@ -147,7 +147,7 @@ export const action = async ({ request }) => {
     const orderInput = {
       lineItems: cartItems.map((item) => ({ variantId: item.variantId, quantity: item.qty })),
       note: `Payment: ${paymentMethod}${customerName ? ` | Customer: ${customerName}` : ""}`,
-      financialStatus: "PENDING",
+      financialStatus: "PAID",
       tags: [paymentMethod],
     };
     if (customerId) orderInput.customerId = customerId;
@@ -160,7 +160,7 @@ export const action = async ({ request }) => {
           order { id totalPriceSet { shopMoney { amount } } }
         }
       }`,
-      { variables: { order: orderInput, options: { inventoryBehaviour: "DECREMENT_IGNORING_POLICY", sendReceipt: true } } }
+      { variables: { order: orderInput, options: { inventoryBehaviour: "DECREMENT_IGNORING_POLICY", sendReceipt: true, fulfillmentStatus: "FULFILLED" } } }
     );
 
     const data = await response.json();
@@ -430,15 +430,40 @@ export default function Index() {
       <div style={{ width: "320px", background: "white", borderLeft: "1px solid #e0e0e0", padding: "20px", display: "flex", flexDirection: "column" }}>
         <h2 style={{ marginBottom: "16px" }}>🧾 Cart</h2>
 
-        {orderResult?.success && (
-          <div style={{ background: "#e6f4ea", border: "1px solid #34a853", borderRadius: "8px", padding: "12px", marginBottom: "16px" }}>
-            <p style={{ margin: "0 0 4px", fontWeight: "600", color: "#1e7e34" }}>✅ Order Created!</p>
-            {orderResult.customerName && <p style={{ margin: "0 0 2px", fontSize: "13px", color: "#1e7e34" }}>Customer: {orderResult.customerName}</p>}
-            <p style={{ margin: "0 0 2px", fontSize: "13px", color: "#1e7e34" }}>Total: ₹{orderResult.total}</p>
-            <p style={{ margin: "0 0 8px", fontSize: "13px", color: "#1e7e34" }}>Paid via: {orderResult.paymentMethod}</p>
-            <button onClick={clearCart} style={{ background: "#008060", color: "white", border: "none", borderRadius: "6px", padding: "6px 12px", cursor: "pointer", fontSize: "13px" }}>New Order</button>
-          </div>
-        )}
+     {orderResult?.success && (
+  <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
+    <div style={{ background: "white", borderRadius: "20px", padding: "40px 32px", textAlign: "center", width: "300px", boxShadow: "0 8px 40px rgba(0,0,0,0.2)", animation: "popIn 0.3s ease" }}>
+      <div style={{ width: "80px", height: "80px", background: "#e6f4ea", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: "40px", animation: "bounceIn 0.5s ease" }}>
+        ✅
+      </div>
+      <h2 style={{ margin: "0 0 8px", fontSize: "22px", color: "#1e7e34" }}>Order Confirmed!</h2>
+      {orderResult.customerName && (
+        <p style={{ margin: "0 0 4px", fontSize: "14px", color: "#555" }}>👤 {orderResult.customerName}</p>
+      )}
+      <p style={{ margin: "0 0 4px", fontSize: "18px", fontWeight: "700", color: "#333" }}>₹{orderResult.total}</p>
+      <p style={{ margin: "0 0 24px", fontSize: "14px", color: "#637381" }}>
+        {orderResult.paymentMethod === "Cash" ? "💵" : orderResult.paymentMethod === "Card" ? "💳" : "📱"} Paid via {orderResult.paymentMethod}
+      </p>
+      <button
+        onClick={clearCart}
+        style={{ width: "100%", padding: "14px", background: "#008060", color: "white", border: "none", borderRadius: "10px", fontSize: "16px", fontWeight: "600", cursor: "pointer" }}
+      >
+        New Order
+      </button>
+    </div>
+    <style>{`
+      @keyframes popIn {
+        0% { transform: scale(0.8); opacity: 0; }
+        100% { transform: scale(1); opacity: 1; }
+      }
+      @keyframes bounceIn {
+        0% { transform: scale(0); }
+        60% { transform: scale(1.2); }
+        100% { transform: scale(1); }
+      }
+    `}</style>
+  </div>
+)}
 
         {orderResult?.success === false && (
           <div style={{ background: "#fff0f0", border: "1px solid #e53e3e", borderRadius: "8px", padding: "12px", marginBottom: "16px" }}>
