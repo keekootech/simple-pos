@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "e4c7d66e25990a32f96289afdc12c502"
-application_url = "https://example.com"
+application_url = "https://pos-app-production-c8b0.up.railway.app"
 embedded = true
 name = "pos-app"
 
@@ -45,8 +45,7 @@ api_version = "2026-07"
   topics = [ "app/scopes_update" ]
 
 [auth]
-redirect_urls = [ "https://example.com/api/auth" ]
+redirect_urls = [ "https://pos-app-production-c8b0.up.railway.app/api/auth" ]
 
 [build]
-include_config_on_deploy = true
 automatically_update_urls_on_dev = true
