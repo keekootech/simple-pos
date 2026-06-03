@@ -262,10 +262,16 @@ export default function Index() {
     fetcher.submit(formData, { method: "POST" });
   };
 
-  const clearCart = () => {
-    setCart([]); setSelectedCustomer(null); setCustomerSearch("");
-    setNewFirst(""); setNewLast(""); setNewPhone(""); setNewEmail("");
+ const clearCart = () => {
+    setCart([]); 
+    setSelectedCustomer(null); 
+    setCustomerSearch("");
+    setNewFirst(""); 
+    setNewLast(""); 
+    setNewPhone(""); 
+    setNewEmail("");
     setShowSuccess(false);
+    fetcher.load("/app");
   };
 
   const filteredCustomers = customers.filter((c) =>
