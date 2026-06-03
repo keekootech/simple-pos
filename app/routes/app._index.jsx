@@ -160,7 +160,7 @@ export const action = async ({ request }) => {
           order { id totalPriceSet { shopMoney { amount } } }
         }
       }`,
-      { variables: { order: orderInput, options: { inventoryBehaviour: "DECREMENT_IGNORING_POLICY", sendReceipt: true, fulfillmentStatus: "FULFILLED" } } }
+      { variables: { order: orderInput, options: { inventoryBehaviour: "DECREMENT_IGNORING_POLICY", sendReceipt: true } } }
     );
 
     const data = await response.json();
