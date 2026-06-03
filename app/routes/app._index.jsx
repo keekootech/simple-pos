@@ -8,13 +8,13 @@ export const loader = async ({ request }) => {
   const [productRes, collectionRes, customerRes] = await Promise.all([
     admin.graphql(`
       query {
-        products(first: 100) {
+        products(first: 50) {
           edges {
             node {
               id title productType
               images(first: 1) { edges { node { url altText } } }
               options { name values }
-              variants(first: 50) {
+              variants(first: 10) {
                 edges {
                   node {
                     id title price inventoryQuantity
@@ -39,7 +39,7 @@ export const loader = async ({ request }) => {
                     id title productType
                     images(first: 1) { edges { node { url altText } } }
                     options { name values }
-                    variants(first: 50) {
+                    variants(first: 10) {
                       edges {
                         node {
                           id title price inventoryQuantity
