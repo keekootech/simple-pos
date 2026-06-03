@@ -182,6 +182,7 @@ export default function Index() {
   const [showNewCustomer, setShowNewCustomer] = useState(false);
   const [customerSearch, setCustomerSearch] = useState("");
   const [productSearch, setProductSearch] = useState("");
+  const [showSuccess, setShowSuccess] = useState(false);
   const [viewMode, setViewMode] = useState("collections"); // "collections" | "types"
 
   const [newFirst, setNewFirst] = useState("");
@@ -192,6 +193,10 @@ export default function Index() {
   const isPlacing = fetcher.state === "submitting" && fetcher.formData?.get("intent") === "placeOrder";
   const isCreating = fetcher.state === "submitting" && fetcher.formData?.get("intent") === "createCustomer";
   const orderResult = fetcher.data?.intent === "placeOrder" ? fetcher.data : null;
+
+  if (orderResult?.success && !showSuccess) {
+    setShowSuccess(true);
+  }
   const createResult = fetcher.data?.intent === "createCustomer" ? fetcher.data : null;
 
   if (createResult?.success && selectedCustomer?.id !== createResult.customer?.id) {
@@ -235,11 +240,12 @@ export default function Index() {
     fetcher.submit(formData, { method: "POST" });
   };
 
-  const clearCart = () => {
+const clearCart = () => {
     setCart([]);
     setSelectedCustomer(null);
     setCustomerSearch("");
     setNewFirst(""); setNewLast(""); setNewPhone(""); setNewEmail("");
+    fetcher.data = null;
   };
 
   const filteredCustomers = customers.filter((c) =>
@@ -430,7 +436,8 @@ export default function Index() {
       <div style={{ width: "320px", background: "white", borderLeft: "1px solid #e0e0e0", padding: "20px", display: "flex", flexDirection: "column" }}>
         <h2 style={{ marginBottom: "16px" }}>🧾 Cart</h2>
 
-     {orderResult?.success && (
+     {showSuccess && orderResult?.success && (
+
   <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
     <div style={{ background: "white", borderRadius: "20px", padding: "40px 32px", textAlign: "center", width: "300px", boxShadow: "0 8px 40px rgba(0,0,0,0.2)", animation: "popIn 0.3s ease" }}>
       <div style={{ width: "80px", height: "80px", background: "#e6f4ea", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: "40px", animation: "bounceIn 0.5s ease" }}>
@@ -445,7 +452,7 @@ export default function Index() {
         {orderResult.paymentMethod === "Cash" ? "💵" : orderResult.paymentMethod === "Card" ? "💳" : "📱"} Paid via {orderResult.paymentMethod}
       </p>
       <button
-        onClick={clearCart}
+        onClick={() => { clearCart(); setShowSuccess(false); }}
         style={{ width: "100%", padding: "14px", background: "#008060", color: "white", border: "none", borderRadius: "10px", fontSize: "16px", fontWeight: "600", cursor: "pointer" }}
       >
         New Order
