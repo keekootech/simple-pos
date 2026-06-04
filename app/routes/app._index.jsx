@@ -5,7 +5,7 @@ import { useState } from "react";
 export const loader = async ({ request }) => {
   const { admin } = await authenticate.admin(request);
 
-  const [productRes, collectionRes, customerRes] = await Promise.all([
+const [productRes, collectionRes, customerRes, settingsRes] = await Promise.all([
     admin.graphql(`
       query {
         products(first: 50) {
@@ -55,17 +55,26 @@ export const loader = async ({ request }) => {
         }
       }
     `),
-    admin.graphql(`
+ admin.graphql(`
       query {
         customers(first: 50) {
           edges { node { id firstName lastName phone email } }
         }
       }
     `),
+    admin.graphql(`
+      query {
+        appInstallation {
+          metafields(first: 10, namespace: "simple_pos") {
+            edges { node { key value } }
+          }
+        }
+      }
+    `),
   ]);
 
-  const [productData, collectionData, customerData] = await Promise.all([
-    productRes.json(), collectionRes.json(), customerRes.json(),
+  const [productData, collectionData, customerData, settingsData] = await Promise.all([
+    productRes.json(), collectionRes.json(), customerRes.json(), settingsRes.json(),
   ]);
 
   const mapProduct = (node) => ({
@@ -105,7 +114,27 @@ export const loader = async ({ request }) => {
     email: e.node.email || "",
   }));
 
-  return { allProducts, collections, productTypes, customers };
+  const metafields = settingsData.data.appInstallation.metafields.edges.reduce((acc, e) => {
+    acc[e.node.key] = e.node.value;
+    return acc;
+  }, {});
+
+  const settings = {
+    customerFields: {
+      phone: metafields.customer_phone !== "false",
+      email: metafields.customer_email !== "false",
+      address: metafields.customer_address === "true",
+      birthday: metafields.customer_birthday === "true",
+      anniversary: metafields.customer_anniversary === "true",
+    },
+    paymentMethods: {
+      cash: metafields.payment_cash !== "false",
+      card: metafields.payment_card !== "false",
+      upi: metafields.payment_upi !== "false",
+    },
+  };
+
+  return { allProducts, collections, productTypes, customers, settings };
 };
 
 export const action = async ({ request }) => {

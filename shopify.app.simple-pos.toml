@@ -1,6 +1,6 @@
 # Simple POS — Public Shopify App
 
-client_id = "e6a8aed068a867edeeabdefa7a47ec68"
+client_id = "da833485148d66ce83141e6b2e7756f3"
 application_url = "https://example.com"
 embedded = true
 name = "Simple POS"
