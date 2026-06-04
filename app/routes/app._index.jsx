@@ -194,7 +194,7 @@ export const action = async ({ request }) => {
 };
 
 export default function Index() {
-  const { allProducts, collections, productTypes, customers } = useLoaderData();
+const { allProducts, collections, productTypes, customers, settings } = useLoaderData();
   const fetcher = useFetcher();
 
   const [cart, setCart] = useState([]);
@@ -216,6 +216,8 @@ const [newLast, setNewLast] = useState("");
 const [newPhone, setNewPhone] = useState("");
 const [newEmail, setNewEmail] = useState("");
 const [newAddress, setNewAddress] = useState("");
+const [newBirthday, setNewBirthday] = useState("");
+const [newAnniversary, setNewAnniversary] = useState("");
 
   const isPlacing = fetcher.state === "submitting" && fetcher.formData?.get("intent") === "placeOrder";
   const isCreating = fetcher.state === "submitting" && fetcher.formData?.get("intent") === "createCustomer";
@@ -302,6 +304,8 @@ const clearCart = () => {
     setNewPhone(""); 
     setNewEmail("");
     setNewAddress("");
+    setNewBirthday("");
+    setNewAnniversary("");
     setShowSuccess(false);
     fetcher.load("/app");
   };
@@ -311,11 +315,11 @@ const clearCart = () => {
   );
 
   const total = cart.reduce((sum, item) => sum + parseFloat(item.price) * item.qty, 0).toFixed(2);
-  const paymentMethods = [
-    { label: "💵 Cash", value: "Cash", color: "#2e7d32" },
-    { label: "💳 Card", value: "Card", color: "#1565c0" },
-    { label: "📱 UPI", value: "UPI", color: "#6a1b9a" },
-  ];
+const paymentMethods = [
+    settings.paymentMethods.cash && { label: "💵 Cash", value: "Cash", color: "#2e7d32" },
+    settings.paymentMethods.card && { label: "💳 Card", value: "Card", color: "#1565c0" },
+    settings.paymentMethods.upi && { label: "📱 UPI", value: "UPI", color: "#6a1b9a" },
+  ].filter(Boolean);
 
   const filterProducts = (products) =>
     products.filter((p) => p.title.toLowerCase().includes(productSearch.toLowerCase()));
@@ -478,8 +482,14 @@ const clearCart = () => {
                 ) : (
                   <>
                     <h4 style={{ margin: "0 0 12px", fontWeight: "600" }}>New Customer</h4>
-                    {[{ label: "First Name *", val: newFirst, set: setNewFirst }, { label: "Last Name", val: newLast, set: setNewLast }, { label: "Phone", val: newPhone, set: setNewPhone }, { label: "Email", val: newEmail, set: setNewEmail }, { label: "Address (optional)", val: newAddress, set: setNewAddress }].map((field) => (
-                      <input key={field.label} type="text" placeholder={field.label} value={field.val} onChange={(e) => field.set(e.target.value)}
+                    {[{ label: "First Name *", val: newFirst, set: setNewFirst, show: true },
+  { label: "Last Name", val: newLast, set: setNewLast, show: true },
+  { label: "Phone", val: newPhone, set: setNewPhone, show: settings.customerFields.phone },
+  { label: "Email", val: newEmail, set: setNewEmail, show: settings.customerFields.email },
+  { label: "Address (optional)", val: newAddress, set: setNewAddress, show: settings.customerFields.address },
+  { label: "Birthday (optional)", val: newBirthday, set: setNewBirthday, show: settings.customerFields.birthday },
+  { label: "Anniversary (optional)", val: newAnniversary, set: setNewAnniversary, show: settings.customerFields.anniversary },].filter((f) => f.show).map((field) => (
+      <input key={field.label} type="text" placeholder={field.label} value={field.val} onChange={(e) => field.set(e.target.value)}
                         style={{ width: "100%", padding: "10px 12px", border: "1px solid #e0e0e0", borderRadius: "8px", fontSize: "14px", marginBottom: "10px", boxSizing: "border-box" }}
                       />
                     ))}
