@@ -194,8 +194,14 @@ export const action = async ({ request }) => {
 };
 
 export default function Index() {
-const { allProducts, collections, productTypes, customers, settings } = useLoaderData();
+  const { allProducts, collections, productTypes, customers, settings } = useLoaderData();
   const fetcher = useFetcher();
+
+  // Staff login check
+const [currentStaff, setCurrentStaff] = useState(null);
+const [loginPin, setLoginPin] = useState("");
+const [loginError, setLoginError] = useState("");
+const [selectedLoginStaff, setSelectedLoginStaff] = useState(null);
 
   const [cart, setCart] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -295,6 +301,12 @@ const [newAnniversary, setNewAnniversary] = useState("");
     fetcher.submit(formData, { method: "POST" });
   };
 
+const logout = () => {
+    localStorage.removeItem("pos_staff");
+    localStorage.removeItem("pos_staff_date");
+    setCurrentStaff(null);
+  }; 
+
 const clearCart = () => {
     setCart([]); 
     setSelectedCustomer(null); 
@@ -346,6 +358,87 @@ const paymentMethods = [
       )}
     </div>
   );
+// Show login screen if no staff logged in
+  if (!currentStaff && settings.staff?.length > 0) {
+    const handlePinPress = (digit) => {
+      if (loginPin.length < 4) {
+        const newPin = loginPin + digit;
+        setLoginPin(newPin);
+        setLoginError("");
+        if (newPin.length === 4) {
+          setTimeout(() => {
+            if (newPin === selectedLoginStaff.pin) {
+             setCurrentStaff(selectedLoginStaff);
+              setLoginPin("");
+              setSelectedLoginStaff(null);
+            } else {
+              setLoginError("Wrong PIN. Try again.");
+              setLoginPin("");
+            }
+          }, 100);
+        }
+      }
+    };
+
+    if (selectedLoginStaff) {
+      return (
+        <div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f6f6f7", fontFamily: "-apple-system, sans-serif" }}>
+          <div style={{ textAlign: "center", width: "320px" }}>
+            <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: "#1a1a1a", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: "700", fontSize: "24px", margin: "0 auto 12px" }}>
+              {selectedLoginStaff.name.charAt(0).toUpperCase()}
+            </div>
+            <h2 style={{ margin: "0 0 4px", fontSize: "20px", fontWeight: "700" }}>{selectedLoginStaff.name}</h2>
+            <p style={{ margin: "0 0 24px", fontSize: "13px", color: "#637381" }}>Enter your 4-digit PIN</p>
+            <div style={{ display: "flex", justifyContent: "center", gap: "16px", marginBottom: "8px" }}>
+              {[0,1,2,3].map((i) => (
+                <div key={i} style={{ width: "16px", height: "16px", borderRadius: "50%", background: loginPin.length > i ? "#1a1a1a" : "#ddd", transition: "background 0.15s" }} />
+              ))}
+            </div>
+            {loginError && <p style={{ color: "#e53e3e", fontSize: "13px", marginBottom: "8px" }}>{loginError}</p>}
+            {!loginError && <div style={{ height: "21px", marginBottom: "8px" }} />}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px", marginBottom: "16px" }}>
+              {[1,2,3,4,5,6,7,8,9].map((n) => (
+                <button key={n} onClick={() => handlePinPress(String(n))}
+                  style={{ padding: "18px", background: "white", border: "none", borderRadius: "12px", fontSize: "20px", fontWeight: "600", cursor: "pointer", boxShadow: "0 1px 4px rgba(0,0,0,0.08)" }}>
+                  {n}
+                </button>
+              ))}
+              <button onClick={() => setLoginPin(loginPin.slice(0,-1))}
+                style={{ padding: "18px", background: "#f0f0f0", border: "none", borderRadius: "12px", fontSize: "20px", cursor: "pointer" }}>⌫</button>
+              <button onClick={() => handlePinPress("0")}
+                style={{ padding: "18px", background: "white", border: "none", borderRadius: "12px", fontSize: "20px", fontWeight: "600", cursor: "pointer", boxShadow: "0 1px 4px rgba(0,0,0,0.08)" }}>0</button>
+              <button onClick={() => { setSelectedLoginStaff(null); setLoginPin(""); setLoginError(""); }}
+                style={{ padding: "18px", background: "#f0f0f0", border: "none", borderRadius: "12px", fontSize: "20px", cursor: "pointer" }}>✕</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f6f6f7", fontFamily: "-apple-system, sans-serif" }}>
+        <div style={{ textAlign: "center", width: "100%", maxWidth: "500px", padding: "20px" }}>
+          <h1 style={{ margin: "0 0 4px", fontSize: "28px", fontWeight: "800" }}>Simple POS</h1>
+          <p style={{ margin: "0 0 40px", color: "#637381", fontSize: "15px" }}>Who are you?</p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", justifyContent: "center" }}>
+            {settings.staff.map((member) => (
+              <div key={member.id} onClick={() => setSelectedLoginStaff(member)}
+                style={{ width: "120px", padding: "20px 16px", background: "white", borderRadius: "16px", cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.08)", textAlign: "center" }}
+                onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.96)")}
+                onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1)")}
+              >
+                <div style={{ width: "52px", height: "52px", borderRadius: "50%", background: "#1a1a1a", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: "700", fontSize: "20px", margin: "0 auto 10px" }}>
+                  {member.name.charAt(0).toUpperCase()}
+                </div>
+                <p style={{ margin: "0 0 4px", fontWeight: "600", fontSize: "14px" }}>{member.name}</p>
+                <p style={{ margin: 0, fontSize: "11px", color: "#888" }}>{member.role}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", position: "relative", background: "#f6f6f7" }}>
@@ -564,6 +657,12 @@ const paymentMethods = [
       {/* Cart */}
       <div style={{ width: "300px", background: "white", borderLeft: "1px solid #ebebeb", display: "flex", flexDirection: "column" }}>
         <div style={{ padding: "20px", borderBottom: "1px solid #f0f0f0" }}>
+          {currentStaff && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+              <p style={{ margin: 0, fontSize: "13px", fontWeight: "600" }}>👋 {currentStaff.name}</p>
+              <button onClick={logout} style={{ padding: "4px 10px", background: "#f4f4f4", border: "1px solid #ddd", borderRadius: "6px", cursor: "pointer", fontSize: "11px", color: "#637381" }}>Logout</button>
+            </div>
+          )}
           <h2 style={{ margin: 0, fontSize: "16px", fontWeight: "700" }}>🧾 Cart {cart.length > 0 && <span style={{ background: "#1a1a1a", color: "white", borderRadius: "20px", padding: "2px 8px", fontSize: "12px", marginLeft: "6px" }}>{cart.length}</span>}</h2>
         </div>
 
