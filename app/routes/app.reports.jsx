@@ -1,4 +1,4 @@
-import { useLoaderData, useSearchParams } from "react-router";
+import { useLoaderData, useSearchParams, useNavigate } from "react-router";
 import { authenticate } from "../shopify.server";
 import { useState } from "react";
 
@@ -98,8 +98,12 @@ export const loader = async ({ request }) => {
 
 export default function Reports() {
   const { staffPerformance, paymentMap, topProducts, totalOrders, totalRevenue, currency, period } = useLoaderData();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const role = searchParams.get("role") || "";
+  if (!role) {
+    window.location.href = "/app/reports?role=admin&period=today";
+  }
 
   if (role !== "admin") {
     return (
@@ -129,11 +133,12 @@ export default function Reports() {
 
         {/* Period toggle */}
         <div style={{ display: "flex", background: "#f0f0f0", borderRadius: "10px", padding: "3px", gap: "2px" }}>
-          {["today", "week", "month"].map((p) => (
-            <a key={p} href={`/app/reports?role=admin&period=${p}`}
-              style={{ padding: "7px 16px", borderRadius: "8px", fontSize: "13px", fontWeight: "600", textDecoration: "none", background: period === p ? "white" : "transparent", color: period === p ? "#1a1a1a" : "#888", boxShadow: period === p ? "0 1px 3px rgba(0,0,0,0.1)" : "none" }}>
+        {["today", "week", "month"].map((p) => (
+            <button key={p}
+              onClick={() => navigate(`/app/reports?role=admin&period=${p}`)}
+              style={{ padding: "7px 16px", borderRadius: "8px", fontSize: "13px", fontWeight: "600", border: "none", cursor: "pointer", background: period === p ? "white" : "transparent", color: period === p ? "#1a1a1a" : "#888", boxShadow: period === p ? "0 1px 3px rgba(0,0,0,0.1)" : "none" }}>
               {p.charAt(0).toUpperCase() + p.slice(1)}
-            </a>
+            </button>
           ))}
         </div>
       </div>

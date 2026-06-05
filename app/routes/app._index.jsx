@@ -1,6 +1,11 @@
 // Global staff role store
-let globalStaffSession = null;
-
+let globalStaffSession = (() => {
+  try {
+    const s = sessionStorage.getItem("spos_staff");
+    if (s) return JSON.parse(s);
+  } catch(e) {}
+  return null;
+})();
 import { useLoaderData, useFetcher } from "react-router";
 import { authenticate } from "../shopify.server";
 import { useState, useEffect, useRef } from "react";
@@ -389,7 +394,8 @@ if (!currentStaff)  {
 
 const logout = () => {
     globalStaffSession = null;
-    setCurrentStaff(null);
+try { sessionStorage.removeItem("spos_staff"); } catch(e) {}
+setCurrentStaff(null);
     window.dispatchEvent(new CustomEvent('staffLogin', { detail: { role: null } }));
   };
 
@@ -898,7 +904,8 @@ function StaffLoginGate({ staff, onLogin }) {
         setTimeout(() => {
       if (newPin === selected.pin) {
             globalStaffSession = selected;
-            onLogin(selected);
+try { sessionStorage.setItem("spos_staff", JSON.stringify(selected)); } catch(e) {}
+onLogin(selected);
             // Store role in URL for nav
             window.dispatchEvent(new CustomEvent('staffLogin', { detail: { role: selected.role } }));
             window.history.replaceState({}, '', `/app?role=${selected.role}`);

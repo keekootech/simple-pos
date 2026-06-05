@@ -7,11 +7,7 @@ import {
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
 import prisma from "./db.server";
 
-export const PLANS = {
-  FREE: "Free",
-  STARTER: "Starter",
-  PRO: "Pro",
-};
+
 
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
@@ -22,18 +18,7 @@ const shopify = shopifyApp({
   authPathPrefix: "/auth",
   sessionStorage: new PrismaSessionStorage(prisma),
   distribution: AppDistribution.AppStore,
-  billing: {
-    [PLANS.STARTER]: {
-      amount: 999,
-      currencyCode: "INR",
-      interval: "EVERY_30_DAYS",
-    },
-    [PLANS.PRO]: {
-      amount: 2499,
-      currencyCode: "INR",
-      interval: "EVERY_30_DAYS",
-    },
-  },
+
   future: {
     expiringOfflineAccessTokens: true,
   },
