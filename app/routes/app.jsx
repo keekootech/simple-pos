@@ -11,16 +11,17 @@ export const loader = async ({ request }) => {
 
 export default function App() {
   const { apiKey } = useLoaderData();
-  const [isAdmin, setIsAdmin] = useState(() => {
+ const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
     try {
       const s = sessionStorage.getItem("spos_staff");
       if (s) {
         const staff = JSON.parse(s);
-        return staff.role === "admin";
+        setIsAdmin(staff.role === "admin");
       }
     } catch(e) {}
-    return false;
-  });
+  }, []);
 
   useEffect(() => {
     const handler = (e) => {

@@ -12,24 +12,73 @@ import { useState, useEffect, useRef } from "react";
 
 export const loader = async ({ request }) => {
   const { admin } = await authenticate.admin(request);
+  const url = new URL(request.url);
+  const cursor = url.searchParams.get("cursor");
 
-const [productRes, collectionRes, customerRes, settingsRes] = await Promise.all([
-    admin.graphql(`
+
+  // If cursor request, only return products
+  if (cursor) {
+    console.log("CURSOR REQUEST:", cursor);
+    const res = await admin.graphql(`
       query {
-        products(first: 50) {
+        products(first: 100) {
+          pageInfo { hasNextPage endCursor }
           edges {
             node {
               id title productType
               images(first: 1) { edges { node { url altText } } }
               options { name values }
-             variants(first: 10) {
-                      edges {
-                        node {
-                          id title price inventoryQuantity barcode
-                          selectedOptions { name value }
-                        }
-                      }
-                    }
+              variants(first: 10) {
+                edges {
+                  node { id title price inventoryQuantity barcode selectedOptions { name value } }
+                }
+              }
+            }
+          }
+        }
+      }
+    `);
+    const data = await res.json();
+    const allProducts = data.data.products.edges.map((e) => ({
+      id: e.node.id,
+      title: e.node.title,
+      productType: e.node.productType || "Other",
+      image: e.node.images.edges[0]?.node.url || null,
+      options: e.node.options || [],
+      variants: e.node.variants.edges.map((v) => ({
+        id: v.node.id,
+        title: v.node.title,
+        price: v.node.price,
+        inventory: v.node.inventoryQuantity || 0,
+        barcode: v.node.barcode || "",
+        selectedOptions: v.node.selectedOptions,
+      })),
+    }));
+    return { allProducts, productsPageInfo: data.data.products.pageInfo };
+  }
+
+
+const [productRes, collectionRes, customerRes, settingsRes] = await Promise.all([
+    admin.graphql(`
+      query {
+          products(first: 100) {
+          pageInfo {
+            hasNextPage
+            endCursor
+          }
+          edges {
+            node {
+              id title productType
+              images(first: 1) { edges { node { url altText } } }
+              options { name values }
+              variants(first: 10) {
+                edges {
+                  node {
+                    id title price inventoryQuantity barcode
+                    selectedOptions { name value }
+                  }
+                }
+              }
             }
           }
         }
@@ -102,6 +151,7 @@ const [productRes, collectionRes, customerRes, settingsRes] = await Promise.all(
   });
 
   const allProducts = productData.data.products.edges.map((e) => mapProduct(e.node));
+  const productsPageInfo = productData.data.products.pageInfo;
   const collections = collectionData.data.collections.edges.map((e) => ({
     id: e.node.id,
     title: e.node.title,
@@ -145,7 +195,7 @@ const [productRes, collectionRes, customerRes, settingsRes] = await Promise.all(
     staff: metafields.staff_list ? JSON.parse(metafields.staff_list) : [],
   };
 
-  return { allProducts, collections, productTypes, customers, settings };
+  return { allProducts, collections, productTypes, customers, settings, productsPageInfo };
 };
 
 export const action = async ({ request }) => {
@@ -207,7 +257,7 @@ export const action = async ({ request }) => {
 };
 
 export default function Index() {
-  const { allProducts, collections, productTypes, customers, settings } = useLoaderData();
+  const { allProducts, collections, productTypes, customers, settings, productsPageInfo } = useLoaderData();
   const fetcher = useFetcher();
 
   // Staff login check
@@ -227,7 +277,37 @@ const [showSuccess, setShowSuccess] = useState(false);
 const [cashGiven, setCashGiven] = useState("");
 const [showCashCalc, setShowCashCalc] = useState(false);
 const [showScanner, setShowScanner] = useState(false);
+const [products, setProducts] = useState(allProducts);
+  const [pageInfo, setPageInfo] = useState(productsPageInfo);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const loadMoreRef = useRef(null);
 const scannerRef = useRef(null);
+
+// Infinite scroll
+  const paginationFetcher = useFetcher();
+
+  useEffect(() => {
+    if (!loadMoreRef.current) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && pageInfo?.hasNextPage && !loadingMore && paginationFetcher.state === "idle") {
+          setLoadingMore(true);
+          paginationFetcher.load(`/app?cursor=${pageInfo.endCursor}`);
+        }
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(loadMoreRef.current);
+    return () => observer.disconnect();
+  }, [pageInfo, loadingMore, paginationFetcher.state]);
+
+  useEffect(() => {
+    if (paginationFetcher.data?.allProducts) {
+      setProducts((prev) => [...prev, ...paginationFetcher.data.allProducts]);
+      setPageInfo(paginationFetcher.data.productsPageInfo);
+      setLoadingMore(false);
+    }
+  }, [paginationFetcher.data]);
 
   useEffect(() => {
     if (!showScanner) {
@@ -428,7 +508,16 @@ const paymentMethods = [
   const filterProducts = (products) =>
     products.filter((p) => p.title.toLowerCase().includes(productSearch.toLowerCase()));
 
-  const groups = viewMode === "collections" ? collections : productTypes;
+  // Use paginated products for "Product Type" view
+  const paginatedTypes = {};
+  products.forEach((p) => {
+    const type = p.productType || "Other";
+    if (!paginatedTypes[type]) paginatedTypes[type] = [];
+    paginatedTypes[type].push(p);
+  });
+  const paginatedTypeGroups = Object.entries(paginatedTypes).map(([title, prods]) => ({ title, products: prods }));
+
+  const groups = viewMode === "collections" ? collections : paginatedTypeGroups;
   const selectedVariant = getSelectedVariant();
 
   const ProductCard = ({ product }) => (
@@ -823,6 +912,9 @@ console.log("SETTINGS:", JSON.stringify(settings));
         })}
 
         {groups.length === 0 && <p style={{ color: "#999", textAlign: "center", marginTop: "60px" }}>No products found</p>}
+        {/* Infinite scroll trigger */}
+        <div ref={loadMoreRef} style={{ height: "20px", marginTop: "10px" }} />
+        {loadingMore && <p style={{ textAlign: "center", color: "#637381", fontSize: "13px", padding: "10px" }}>Loading more products...</p>}
       </div>
 
       {/* Cart */}
