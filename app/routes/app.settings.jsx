@@ -42,6 +42,7 @@ export const loader = async ({ request }) => {
       cash: metafields.payment_cash !== "false",
       card: metafields.payment_card !== "false",
       upi: metafields.payment_upi !== "false",
+      cashCalculator: metafields.cash_calculator !== "false",
     },
     staff: metafields.staff_list ? JSON.parse(metafields.staff_list) : [],
   };
@@ -61,7 +62,7 @@ export const action = async ({ request }) => {
     "customer_phone", "customer_email", "customer_address",
     "customer_birthday", "customer_anniversary",
     "payment_cash", "payment_card", "payment_upi",
-    "staff_list",
+    "cash_calculator", "staff_list",
   ];
 
   const metafields = keys.map((key) => ({
@@ -114,6 +115,7 @@ export default function Settings() {
     formData.append("payment_cash", String(paymentMethods.cash));
     formData.append("payment_card", String(paymentMethods.card));
     formData.append("payment_upi", String(paymentMethods.upi));
+    formData.append("cash_calculator", String(paymentMethods.cashCalculator));
     formData.append("staff_list", JSON.stringify(updatedStaff || staff));
     fetcher.submit(formData, { method: "POST" });
   };
@@ -292,6 +294,7 @@ export default function Settings() {
           { label: "💵 Cash", description: "Physical cash payment", key: "cash" },
           { label: "💳 Card", description: "Credit / Debit card via external machine", key: "card" },
           { label: "📱 UPI", description: "GPay, PhonePe, Paytm etc.", key: "upi" },
+          { label: "🧮 Cash Change Calculator", description: "Show change amount when customer pays cash", key: "cashCalculator" },
         ].map((method) => (
           <div key={method.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 0", borderBottom: "1px solid #f5f5f5" }}>
             <div>

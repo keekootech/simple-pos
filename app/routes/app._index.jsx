@@ -3,7 +3,7 @@ let globalStaffSession = null;
 
 import { useLoaderData, useFetcher } from "react-router";
 import { authenticate } from "../shopify.server";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export const loader = async ({ request }) => {
   const { admin } = await authenticate.admin(request);
@@ -17,14 +17,14 @@ const [productRes, collectionRes, customerRes, settingsRes] = await Promise.all(
               id title productType
               images(first: 1) { edges { node { url altText } } }
               options { name values }
-              variants(first: 10) {
-                edges {
-                  node {
-                    id title price inventoryQuantity
-                    selectedOptions { name value }
-                  }
-                }
-              }
+             variants(first: 10) {
+                      edges {
+                        node {
+                          id title price inventoryQuantity barcode
+                          selectedOptions { name value }
+                        }
+                      }
+                    }
             }
           }
         }
@@ -45,7 +45,7 @@ const [productRes, collectionRes, customerRes, settingsRes] = await Promise.all(
                     variants(first: 10) {
                       edges {
                         node {
-                          id title price inventoryQuantity
+                          id title price inventoryQuantity barcode
                           selectedOptions { name value }
                         }
                       }
@@ -91,6 +91,7 @@ const [productRes, collectionRes, customerRes, settingsRes] = await Promise.all(
       title: v.node.title,
       price: v.node.price,
       inventory: v.node.inventoryQuantity || 0,
+      barcode: v.node.barcode || "",
       selectedOptions: v.node.selectedOptions,
     })),
   });
@@ -134,6 +135,7 @@ const [productRes, collectionRes, customerRes, settingsRes] = await Promise.all(
       cash: metafields.payment_cash !== "false",
       card: metafields.payment_card !== "false",
       upi: metafields.payment_upi !== "false",
+      cashCalculator: metafields.cash_calculator !== "false",
     },
     staff: metafields.staff_list ? JSON.parse(metafields.staff_list) : [],
   };
@@ -168,13 +170,15 @@ export const action = async ({ request }) => {
     const cartItems = JSON.parse(formData.get("cartItems"));
     const paymentMethod = formData.get("paymentMethod");
     const customerId = formData.get("customerId");
+    const staffName = formData.get("staffName") || "Unknown";
     const customerName = formData.get("customerName");
+    const staffId = formData.get("staffId");
 
     const orderInput = {
       lineItems: cartItems.map((item) => ({ variantId: item.variantId, quantity: item.qty })),
-      note: `Payment: ${paymentMethod}${customerName ? ` | Customer: ${customerName}` : ""}`,
+      note: `Payment: ${paymentMethod}${customerName ? ` | Customer: ${customerName}` : ""} | Staff: ${staffName}`,
       financialStatus: "PAID",
-      tags: [paymentMethod, "POS"],
+      tags: [paymentMethod, "POS", `Staff:${staffName}`],
     };
     if (customerId) orderInput.customerId = customerId;
 
@@ -215,6 +219,67 @@ const [customerSearch, setCustomerSearch] = useState("");
 const [productSearch, setProductSearch] = useState("");
 const [viewMode, setViewMode] = useState("collections");
 const [showSuccess, setShowSuccess] = useState(false);
+const [cashGiven, setCashGiven] = useState("");
+const [showCashCalc, setShowCashCalc] = useState(false);
+const [showScanner, setShowScanner] = useState(false);
+const scannerRef = useRef(null);
+
+  useEffect(() => {
+    if (!showScanner) {
+     if (scannerRef.current) {
+        try {
+          scannerRef.current.stop();
+        } catch(e) {}
+        try {
+          scannerRef.current.clear();
+        } catch(e) {}
+        scannerRef.current = null;
+      }
+      return;
+    }
+
+    let html5QrCode;
+    const loadScanner = () => new Promise((resolve) => {
+        const script = document.createElement("script");
+        script.src = "https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js";
+        script.onload = () => resolve(window.Html5Qrcode);
+        document.head.appendChild(script);
+      });
+
+      loadScanner().then((Html5Qrcode) => {
+      html5QrCode = new Html5Qrcode("barcode-scanner");
+      scannerRef.current = html5QrCode;
+      html5QrCode.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 250, height: 150 } },
+        (decodedText) => {
+          // Find product by barcode
+          const found = allProducts.find((p) =>
+            p.variants.some((v) => v.barcode === decodedText)
+          );
+          if (found) {
+            setShowScanner(false);
+            openDrawer(found);
+          } else {
+            // Try search by title
+            setProductSearch(decodedText);
+            setShowScanner(false);
+          }
+        },
+        () => {}
+      ).catch((err) => {
+        console.error("Scanner error:", err);
+      });
+    });
+
+    return () => {
+      if (scannerRef.current) {
+        try { scannerRef.current.stop(); } catch(e) {}
+        try { scannerRef.current.clear(); } catch(e) {}
+        scannerRef.current = null;
+      }
+    };
+  }, [showScanner]);
 
 
 
@@ -289,15 +354,26 @@ if (!currentStaff)  {
     setCart((prev) => prev.map((item) => item.id === id ? { ...item, qty } : item));
   };
 
-  const placeOrder = (paymentMethod) => {
+ const placeOrder = (paymentMethod) => {
+    if (paymentMethod === "Cash" && settings.paymentMethods.cashCalculator) {
+      setShowCashCalc(true);
+      setShowModal(false);
+      return;
+    }
+    submitOrder(paymentMethod);
+  };
+
+  const submitOrder = (paymentMethod) => {
     const formData = new FormData();
     formData.append("intent", "placeOrder");
     formData.append("cartItems", JSON.stringify(cart));
     formData.append("paymentMethod", paymentMethod);
     formData.append("customerId", selectedCustomer?.id || "");
     formData.append("customerName", selectedCustomer?.name || "");
+    formData.append("staffName", currentStaff?.name || "Unknown");
     fetcher.submit(formData, { method: "POST" });
-    setShowModal(false);
+    setShowCashCalc(false);
+    setCashGiven("");
   };
 
   const createCustomer = () => {
@@ -453,6 +529,80 @@ console.log("SETTINGS:", JSON.stringify(settings));
 
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", position: "relative", background: "#f6f6f7" }}>
+{/* Barcode Scanner Modal */}
+      {showScanner && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: "white", borderRadius: "20px", padding: "24px", width: "340px", boxShadow: "0 16px 60px rgba(0,0,0,0.25)" }}>
+            <h3 style={{ margin: "0 0 4px", fontSize: "18px", fontWeight: "700" }}>📷 Scan Barcode</h3>
+            <p style={{ margin: "0 0 16px", color: "#637381", fontSize: "13px" }}>Point camera at product barcode</p>
+            <div id="barcode-scanner" style={{ width: "100%", borderRadius: "12px", overflow: "hidden" }} />
+            <button onClick={() => setShowScanner(false)}
+              style={{ width: "100%", marginTop: "16px", padding: "12px", background: "transparent", border: "1px solid #e0e0e0", borderRadius: "10px", cursor: "pointer", color: "#637381", fontSize: "14px" }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+{/* Cash Calculator Modal */}
+      {showCashCalc && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: "white", borderRadius: "20px", padding: "32px", width: "340px", boxShadow: "0 16px 60px rgba(0,0,0,0.25)", fontFamily: "-apple-system, sans-serif" }}>
+            <h3 style={{ margin: "0 0 4px", fontSize: "18px", fontWeight: "700" }}>💵 Cash Payment</h3>
+            <p style={{ margin: "0 0 20px", color: "#637381", fontSize: "13px" }}>Bill Total: <strong style={{ color: "#1a1a1a" }}>₹{total}</strong></p>
+
+            {/* Quick buttons */}
+            <p style={{ margin: "0 0 8px", fontSize: "12px", color: "#888", textTransform: "uppercase", letterSpacing: "0.6px" }}>Cash Received</p>
+            <div style={{ display: "flex", gap: "8px", marginBottom: "10px" }}>
+              {[500, 1000, 2000].map((amt) => (
+                <button key={amt} onClick={() => setCashGiven(String(amt))}
+                  style={{ flex: 1, padding: "10px", background: cashGiven === String(amt) ? "#1a1a1a" : "#f4f4f4", color: cashGiven === String(amt) ? "white" : "#1a1a1a", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600", fontSize: "14px" }}>
+                  ₹{amt}
+                </button>
+              ))}
+            </div>
+
+            {/* Custom input */}
+            <input
+              type="number"
+              placeholder="Or enter custom amount..."
+              value={cashGiven}
+              onChange={(e) => setCashGiven(e.target.value)}
+              style={{ width: "100%", padding: "12px", border: "1px solid #e0e0e0", borderRadius: "8px", fontSize: "15px", boxSizing: "border-box", marginBottom: "16px" }}
+            />
+
+            {/* Change display */}
+            {cashGiven && parseFloat(cashGiven) >= parseFloat(total) && (
+              <div style={{ background: "#e6f4ea", borderRadius: "12px", padding: "16px", marginBottom: "16px", textAlign: "center" }}>
+                <p style={{ margin: "0 0 4px", fontSize: "13px", color: "#637381" }}>Change to return</p>
+                <p style={{ margin: 0, fontSize: "36px", fontWeight: "800", color: "#1e7e34" }}>
+                  ₹{(parseFloat(cashGiven) - parseFloat(total)).toFixed(0)}
+                </p>
+              </div>
+            )}
+
+            {cashGiven && parseFloat(cashGiven) < parseFloat(total) && (
+              <div style={{ background: "#fff0f0", borderRadius: "12px", padding: "12px", marginBottom: "16px", textAlign: "center" }}>
+                <p style={{ margin: 0, fontSize: "14px", color: "#e53e3e", fontWeight: "600" }}>
+                  ₹{(parseFloat(total) - parseFloat(cashGiven)).toFixed(0)} short
+                </p>
+              </div>
+            )}
+
+            <button
+              onClick={() => submitOrder("Cash")}
+              disabled={!cashGiven || parseFloat(cashGiven) < parseFloat(total)}
+              style={{ width: "100%", padding: "14px", background: !cashGiven || parseFloat(cashGiven) < parseFloat(total) ? "#ccc" : "#2e7d32", color: "white", border: "none", borderRadius: "10px", fontSize: "16px", fontWeight: "700", cursor: !cashGiven || parseFloat(cashGiven) < parseFloat(total) ? "not-allowed" : "pointer" }}>
+              ✅ Confirm & Place Order
+            </button>
+
+            <button onClick={() => { setShowCashCalc(false); setCashGiven(""); setShowModal(true); }}
+              style={{ width: "100%", marginTop: "10px", padding: "10px", background: "transparent", border: "none", cursor: "pointer", color: "#999", fontSize: "13px" }}>
+              ← Back
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Order Success Overlay */}
       {showSuccess && orderResult?.success && (
@@ -638,6 +788,10 @@ console.log("SETTINGS:", JSON.stringify(settings));
           <input type="text" placeholder="Search products..." value={productSearch} onChange={(e) => setProductSearch(e.target.value)}
             style={{ flex: 1, padding: "9px 14px", border: "1px solid #e0e0e0", borderRadius: "8px", fontSize: "14px", background: "white" }}
           />
+          <button onClick={() => setShowScanner(true)}
+            style={{ padding: "9px 14px", background: "#1a1a1a", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "14px", whiteSpace: "nowrap" }}>
+            📷 Scan
+          </button>
           <div style={{ display: "flex", background: "#e8e8e8", borderRadius: "8px", padding: "3px", gap: "2px" }}>
             {["collections", "types"].map((mode) => (
               <button key={mode} onClick={() => setViewMode(mode)}
