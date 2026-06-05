@@ -309,16 +309,26 @@ export default function Settings() {
         ))}
       </div>
 
-      <div style={{ ...cardStyle, background: "#1a1a1a", color: "white" }}>
-        <h2 style={{ ...sectionTitle, color: "white" }}>⚡ Current Plan</h2>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div>
-            <p style={{ margin: "0 0 4px", fontSize: "22px", fontWeight: "800" }}>Free</p>
-            <p style={{ margin: 0, fontSize: "13px", color: "#aaa" }}>Up to 30 products · 1 staff login</p>
+     <div style={{ ...cardStyle, background: "#1a1a1a", color: "white" }}>
+        <h2 style={{ ...sectionTitle, color: "white" }}>⚡ Current Plan — Free</h2>
+        <p style={{ margin: "0 0 20px", fontSize: "13px", color: "#aaa" }}>Upgrade to unlock more staff and products</p>
+        <div style={{ display: "flex", gap: "12px" }}>
+          <div style={{ flex: 1, background: "rgba(255,255,255,0.1)", borderRadius: "12px", padding: "16px" }}>
+            <p style={{ margin: "0 0 4px", fontWeight: "700", fontSize: "16px" }}>Starter</p>
+            <p style={{ margin: "0 0 8px", fontSize: "22px", fontWeight: "800" }}>₹999<span style={{ fontSize: "13px", fontWeight: "400", color: "#aaa" }}>/mo</span></p>
+            <p style={{ margin: "0 0 12px", fontSize: "12px", color: "#aaa" }}>3 staff · 200 products</p>
+            <a href="/app/billing?plan=Starter&role=admin" style={{ display: "block", padding: "10px", background: "white", color: "#1a1a1a", borderRadius: "8px", fontWeight: "700", fontSize: "13px", textAlign: "center", textDecoration: "none" }}>
+              Upgrade →
+            </a>
           </div>
-          <button style={{ padding: "12px 20px", background: "white", color: "#1a1a1a", border: "none", borderRadius: "10px", fontWeight: "700", cursor: "pointer", fontSize: "14px" }}>
-            Upgrade →
-          </button>
+          <div style={{ flex: 1, background: "rgba(255,255,255,0.15)", borderRadius: "12px", padding: "16px", border: "1px solid rgba(255,255,255,0.3)" }}>
+            <p style={{ margin: "0 0 4px", fontWeight: "700", fontSize: "16px" }}>Pro ⭐</p>
+            <p style={{ margin: "0 0 8px", fontSize: "22px", fontWeight: "800" }}>₹2,499<span style={{ fontSize: "13px", fontWeight: "400", color: "#aaa" }}>/mo</span></p>
+            <p style={{ margin: "0 0 12px", fontSize: "12px", color: "#aaa" }}>Unlimited everything</p>
+            <a href="/app/billing?plan=Pro&role=admin" style={{ display: "block", padding: "10px", background: "white", color: "#1a1a1a", borderRadius: "8px", fontWeight: "700", fontSize: "13px", textAlign: "center", textDecoration: "none" }}>
+              Upgrade →
+            </a>
+          </div>
         </div>
       </div>
 
