@@ -1,4 +1,4 @@
-import { useLoaderData, useFetcher } from "react-router";
+import { useLoaderData, useFetcher, useSearchParams } from "react-router";
 import { authenticate } from "../shopify.server";
 import { useState } from "react";
 
@@ -88,6 +88,8 @@ export const action = async ({ request }) => {
 
 export default function Settings() {
   const { shop, settings } = useLoaderData();
+  const [searchParams] = useSearchParams();
+  const role = searchParams.get("role");
   const fetcher = useFetcher();
 
   const [customerFields, setCustomerFields] = useState(settings.customerFields);
@@ -151,10 +153,22 @@ export default function Settings() {
     </div>
   );
 
+  // Admin check AFTER all hooks
+  if (role !== "admin") {
+    return (
+      <div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "sans-serif" }}>
+        <div style={{ textAlign: "center" }}>
+          <p style={{ fontSize: "48px" }}>🔒</p>
+          <h2 style={{ margin: "0 0 8px" }}>Admin Only</h2>
+          <p style={{ color: "#637381" }}>You need admin access to view settings.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ maxWidth: "680px", margin: "0 auto", padding: "32px 20px", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
 
-      {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "32px" }}>
         <div>
           <h1 style={{ margin: "0 0 4px", fontSize: "24px", fontWeight: "700" }}>⚙️ Settings</h1>
@@ -166,7 +180,6 @@ export default function Settings() {
         </button>
       </div>
 
-      {/* Store Info */}
       <div style={cardStyle}>
         <h2 style={sectionTitle}>🏪 Store</h2>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
@@ -184,7 +197,6 @@ export default function Settings() {
         </div>
       </div>
 
-      {/* Staff Management */}
       <div style={cardStyle}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
           <h2 style={{ ...sectionTitle, margin: 0 }}>👥 Staff</h2>
@@ -195,19 +207,14 @@ export default function Settings() {
         </div>
         <p style={{ margin: "0 0 16px", fontSize: "13px", color: "#637381" }}>Staff members can log in to POS with their name and 4-digit PIN</p>
 
-        {/* Add Staff Form */}
         {showAddStaff && (
           <div style={{ background: "#f9f9f9", borderRadius: "12px", padding: "16px", marginBottom: "16px" }}>
             <h4 style={{ margin: "0 0 12px", fontSize: "14px" }}>New Staff Member</h4>
             <input type="text" placeholder="Full Name *" value={newStaffName}
-              onChange={(e) => setNewStaffName(e.target.value)}
-              style={inputStyle}
-            />
+              onChange={(e) => setNewStaffName(e.target.value)} style={inputStyle} />
             <input type="password" placeholder="4-digit PIN *" value={newStaffPin}
               onChange={(e) => setNewStaffPin(e.target.value.slice(0, 4))}
-              maxLength={4}
-              style={inputStyle}
-            />
+              maxLength={4} style={inputStyle} />
             {pinError && <p style={{ color: "red", fontSize: "12px", margin: "-8px 0 10px" }}>{pinError}</p>}
             <select value={newStaffRole} onChange={(e) => setNewStaffRole(e.target.value)}
               style={{ ...inputStyle, background: "white" }}>
@@ -217,9 +224,7 @@ export default function Settings() {
             </select>
             <div style={{ display: "flex", gap: "8px", marginTop: "4px" }}>
               <button onClick={() => setShowAddStaff(false)}
-                style={{ flex: 1, padding: "10px", background: "white", border: "1px solid #ddd", borderRadius: "8px", cursor: "pointer" }}>
-                Cancel
-              </button>
+                style={{ flex: 1, padding: "10px", background: "white", border: "1px solid #ddd", borderRadius: "8px", cursor: "pointer" }}>Cancel</button>
               <button onClick={addStaff} disabled={!newStaffName || newStaffPin.length !== 4}
                 style={{ flex: 1, padding: "10px", background: !newStaffName || newStaffPin.length !== 4 ? "#ccc" : "#008060", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600" }}>
                 Add Staff
@@ -228,7 +233,6 @@ export default function Settings() {
           </div>
         )}
 
-        {/* Staff List */}
         {staff.length === 0 ? (
           <p style={{ color: "#bbb", fontSize: "13px", textAlign: "center", padding: "20px 0" }}>No staff added yet</p>
         ) : (
@@ -254,7 +258,6 @@ export default function Settings() {
         )}
       </div>
 
-      {/* Customer Fields */}
       <div style={cardStyle}>
         <h2 style={sectionTitle}>👤 Customer Fields</h2>
         <p style={{ margin: "0 0 16px", fontSize: "13px", color: "#637381" }}>Choose what to collect when adding a new customer at POS</p>
@@ -282,7 +285,6 @@ export default function Settings() {
         ))}
       </div>
 
-      {/* Payment Methods */}
       <div style={cardStyle}>
         <h2 style={sectionTitle}>💳 Payment Methods</h2>
         <p style={{ margin: "0 0 16px", fontSize: "13px", color: "#637381" }}>Choose which payment methods appear at checkout</p>
@@ -304,7 +306,6 @@ export default function Settings() {
         ))}
       </div>
 
-      {/* Plan */}
       <div style={{ ...cardStyle, background: "#1a1a1a", color: "white" }}>
         <h2 style={{ ...sectionTitle, color: "white" }}>⚡ Current Plan</h2>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>

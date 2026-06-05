@@ -1,27 +1,28 @@
-# Simple POS — Public Shopify App
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "da833485148d66ce83141e6b2e7756f3"
+name = "Simple POS"
 application_url = "https://example.com"
 embedded = true
-name = "Simple POS"
 
-[access_scopes]
-scopes = "write_products,read_products,write_metaobjects,write_metaobject_definitions,write_draft_orders,read_orders,write_orders,write_customers,read_customers,read_inventory,write_inventory,read_locations"
+[build]
+automatically_update_urls_on_dev = true
+include_config_on_deploy = true
 
 [webhooks]
 api_version = "2026-07"
 
   [[webhooks.subscriptions]]
-  uri = "/webhooks/app/uninstalled"
-  topics = [ "app/uninstalled" ]
-
-  [[webhooks.subscriptions]]
   uri = "/webhooks/app/scopes_update"
   topics = [ "app/scopes_update" ]
 
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/app/uninstalled"
+  topics = [ "app/uninstalled" ]
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_customers,read_inventory,read_locations,read_orders,read_products,write_customers,write_draft_orders,write_inventory,write_metaobject_definitions,write_metaobjects,write_orders,write_products"
+
 [auth]
 redirect_urls = [ "https://example.com/api/auth" ]
-
-[build]
-include_config_on_deploy = true
-automatically_update_urls_on_dev = true
