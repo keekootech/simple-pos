@@ -54,7 +54,7 @@ export const loader = async ({ request }) => {
         selectedOptions: v.node.selectedOptions,
       })),
     }));
-    return { allProducts, productsPageInfo: data.data.products.pageInfo };
+    return { allProducts };
   }
 
 
@@ -151,7 +151,6 @@ const [productRes, collectionRes, customerRes, settingsRes] = await Promise.all(
   });
 
   const allProducts = productData.data.products.edges.map((e) => mapProduct(e.node));
-  const productsPageInfo = productData.data.products.pageInfo;
   const collections = collectionData.data.collections.edges.map((e) => ({
     id: e.node.id,
     title: e.node.title,
@@ -195,7 +194,26 @@ const [productRes, collectionRes, customerRes, settingsRes] = await Promise.all(
     staff: metafields.staff_list ? JSON.parse(metafields.staff_list) : [],
   };
 
-  return { allProducts, collections, productTypes, customers, settings, productsPageInfo };
+  const shopRes = await admin.graphql(`
+    query {
+      shop {
+        billingAddress { countryCode }
+      }
+    }
+  `);
+  const shopData = await shopRes.json();
+  const countryCode = shopData.data.shop.billingAddress?.countryCode || "IN";
+
+  const countryDialCodes = {
+    IN: "+91", US: "+1", GB: "+44", AE: "+971", SG: "+65",
+    AU: "+61", CA: "+1", NZ: "+64", ZA: "+27", MY: "+60",
+    PK: "+92", BD: "+880", LK: "+94", NP: "+977", SA: "+966",
+    QA: "+974", KW: "+965", BH: "+973", OM: "+968", EG: "+20",
+  };
+
+  const defaultDialCode = countryDialCodes[countryCode] || "+91";
+
+  return { allProducts, collections, productTypes, customers, settings, defaultDialCode };
 };
 
 export const action = async ({ request }) => {
@@ -257,7 +275,7 @@ export const action = async ({ request }) => {
 };
 
 export default function Index() {
-  const { allProducts, collections, productTypes, customers, settings, productsPageInfo } = useLoaderData();
+  const { allProducts, collections, productTypes, customers, settings, defaultDialCode } = useLoaderData();
   const fetcher = useFetcher();
 
   // Staff login check
@@ -277,37 +295,8 @@ const [showSuccess, setShowSuccess] = useState(false);
 const [cashGiven, setCashGiven] = useState("");
 const [showCashCalc, setShowCashCalc] = useState(false);
 const [showScanner, setShowScanner] = useState(false);
-const [products, setProducts] = useState(allProducts);
-  const [pageInfo, setPageInfo] = useState(productsPageInfo);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const loadMoreRef = useRef(null);
 const scannerRef = useRef(null);
 
-// Infinite scroll
-  const paginationFetcher = useFetcher();
-
-  useEffect(() => {
-    if (!loadMoreRef.current) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && pageInfo?.hasNextPage && !loadingMore && paginationFetcher.state === "idle") {
-          setLoadingMore(true);
-          paginationFetcher.load(`/app?cursor=${pageInfo.endCursor}`);
-        }
-      },
-      { threshold: 0.1 }
-    );
-    observer.observe(loadMoreRef.current);
-    return () => observer.disconnect();
-  }, [pageInfo, loadingMore, paginationFetcher.state]);
-
-  useEffect(() => {
-    if (paginationFetcher.data?.allProducts) {
-      setProducts((prev) => [...prev, ...paginationFetcher.data.allProducts]);
-      setPageInfo(paginationFetcher.data.productsPageInfo);
-      setLoadingMore(false);
-    }
-  }, [paginationFetcher.data]);
 
   useEffect(() => {
     if (!showScanner) {
@@ -372,6 +361,7 @@ const scannerRef = useRef(null);
   const [drawerProduct, setDrawerProduct] = useState(null);
   const [selectedOptions, setSelectedOptions] = useState({});
 
+const [phoneCountryCode, setPhoneCountryCode] = useState(defaultDialCode);
 const [newFirst, setNewFirst] = useState("");
 const [newLast, setNewLast] = useState("");
 const [newPhone, setNewPhone] = useState("");
@@ -466,7 +456,7 @@ if (!currentStaff)  {
     formData.append("intent", "createCustomer");
     formData.append("firstName", newFirst);
     formData.append("lastName", newLast);
-    formData.append("phone", newPhone);
+    formData.append("phone", newPhone ? `${phoneCountryCode}${newPhone}` : "");
     formData.append("email", newEmail);
     formData.append("address", newAddress);
     fetcher.submit(formData, { method: "POST" });
@@ -490,6 +480,7 @@ const clearCart = () => {
     setNewAddress("");
     setNewBirthday("");
     setNewAnniversary("");
+    setPhoneCountryCode(defaultDialCode);
     setShowSuccess(false);
     fetcher.load("/app");
   };
@@ -831,17 +822,33 @@ console.log("SETTINGS:", JSON.stringify(settings));
                 ) : (
                   <>
                     <h4 style={{ margin: "0 0 12px", fontWeight: "600" }}>New Customer</h4>
-                    {[{ label: "First Name *", val: newFirst, set: setNewFirst, show: true },
-  { label: "Last Name", val: newLast, set: setNewLast, show: true },
-  { label: "Phone", val: newPhone, set: setNewPhone, show: settings.customerFields.phone },
-  { label: "Email", val: newEmail, set: setNewEmail, show: settings.customerFields.email },
-  { label: "Address (optional)", val: newAddress, set: setNewAddress, show: settings.customerFields.address },
-  { label: "Birthday (optional)", val: newBirthday, set: setNewBirthday, show: settings.customerFields.birthday },
-  { label: "Anniversary (optional)", val: newAnniversary, set: setNewAnniversary, show: settings.customerFields.anniversary },].filter((f) => f.show).map((field) => (
-      <input key={field.label} type="text" placeholder={field.label} value={field.val} onChange={(e) => field.set(e.target.value)}
-                        style={{ width: "100%", padding: "10px 12px", border: "1px solid #e0e0e0", borderRadius: "8px", fontSize: "14px", marginBottom: "10px", boxSizing: "border-box" }}
-                      />
-                    ))}
+                   
+                   {settings.customerFields.phone && (
+                  <div style={{ display: "flex", gap: "8px", marginBottom: "10px" }}>
+                    <select value={phoneCountryCode} onChange={(e) => setPhoneCountryCode(e.target.value)}
+                      style={{ width: "100px", padding: "10px 8px", border: "1px solid #e0e0e0", borderRadius: "8px", fontSize: "13px", background: "white", flexShrink: 0 }}>
+                      {["+91","+1","+44","+971","+65","+61","+92","+880","+966","+974","+965","+973","+968","+60","+27"].map((code) => (
+                        <option key={code} value={code}>{code}</option>
+                      ))}
+                    </select>
+                    <input type="tel" placeholder="Phone number" value={newPhone} onChange={(e) => setNewPhone(e.target.value)}
+                      style={{ flex: 1, padding: "10px 12px", border: "1px solid #e0e0e0", borderRadius: "8px", fontSize: "14px", boxSizing: "border-box" }}
+                    />
+                  </div>
+                )}
+
+                {[
+                  { label: "First Name *", val: newFirst, set: setNewFirst, show: true },
+                  { label: "Last Name", val: newLast, set: setNewLast, show: true },
+                  { label: "Email", val: newEmail, set: setNewEmail, show: settings.customerFields.email },
+                  { label: "Address (optional)", val: newAddress, set: setNewAddress, show: settings.customerFields.address },
+                  { label: "Birthday (optional)", val: newBirthday, set: setNewBirthday, show: settings.customerFields.birthday },
+                  { label: "Anniversary (optional)", val: newAnniversary, set: setNewAnniversary, show: settings.customerFields.anniversary },
+                ].filter((f) => f.show).map((field) => (
+                  <input key={field.label} type="text" placeholder={field.label} value={field.val} onChange={(e) => field.set(e.target.value)}
+                    style={{ width: "100%", padding: "10px 12px", border: "1px solid #e0e0e0", borderRadius: "8px", fontSize: "14px", marginBottom: "10px", boxSizing: "border-box" }}
+                  />
+                ))}
                     {createResult?.success === false && <p style={{ color: "red", fontSize: "13px" }}>❌ {createResult.error}</p>}
                     <div style={{ display: "flex", gap: "8px" }}>
                       <button onClick={() => setShowNewCustomer(false)} style={{ flex: 1, padding: "10px", background: "#f4f4f4", border: "1px solid #e0e0e0", borderRadius: "8px", cursor: "pointer" }}>← Back</button>
@@ -913,8 +920,7 @@ console.log("SETTINGS:", JSON.stringify(settings));
 
         {groups.length === 0 && <p style={{ color: "#999", textAlign: "center", marginTop: "60px" }}>No products found</p>}
         {/* Infinite scroll trigger */}
-        <div ref={loadMoreRef} style={{ height: "20px", marginTop: "10px" }} />
-        {loadingMore && <p style={{ textAlign: "center", color: "#637381", fontSize: "13px", padding: "10px" }}>Loading more products...</p>}
+       
       </div>
 
       {/* Cart */}
