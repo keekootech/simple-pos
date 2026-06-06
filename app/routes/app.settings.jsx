@@ -90,7 +90,9 @@ export const action = async ({ request }) => {
 
 export default function Settings() {
   const { shop, settings, onboardingComplete } = useLoaderData();
+  //Guided Tour
   const [showGuide, setShowGuide] = useState(!onboardingComplete);
+  // const [showGuide, setShowGuide] = useState(true);
   const [searchParams] = useSearchParams();
   const role = searchParams.get("role");
   const fetcher = useFetcher();
