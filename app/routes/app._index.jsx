@@ -499,9 +499,9 @@ const paymentMethods = [
   const filterProducts = (products) =>
     products.filter((p) => p.title.toLowerCase().includes(productSearch.toLowerCase()));
 
-  // Use paginated products for "Product Type" view
+// Use paginated products for "Product Type" view
   const paginatedTypes = {};
-  products.forEach((p) => {
+  allProducts.forEach((p) => {
     const type = p.productType || "Other";
     if (!paginatedTypes[type]) paginatedTypes[type] = [];
     paginatedTypes[type].push(p);
@@ -825,12 +825,29 @@ console.log("SETTINGS:", JSON.stringify(settings));
                    
                    {settings.customerFields.phone && (
                   <div style={{ display: "flex", gap: "8px", marginBottom: "10px" }}>
-                    <select value={phoneCountryCode} onChange={(e) => setPhoneCountryCode(e.target.value)}
-                      style={{ width: "100px", padding: "10px 8px", border: "1px solid #e0e0e0", borderRadius: "8px", fontSize: "13px", background: "white", flexShrink: 0 }}>
-                      {["+91","+1","+44","+971","+65","+61","+92","+880","+966","+974","+965","+973","+968","+60","+27"].map((code) => (
-                        <option key={code} value={code}>{code}</option>
-                      ))}
-                    </select>
+                   <select value={phoneCountryCode} onChange={(e) => setPhoneCountryCode(e.target.value)}
+      style={{ width: "120px", padding: "10px 8px", border: "1px solid #e0e0e0", borderRadius: "8px", fontSize: "13px", background: "white", flexShrink: 0 }}>
+      {[
+        { code: "+91", flag: "🇮🇳", label: "IN" },
+        { code: "+1", flag: "🇺🇸", label: "US" },
+        { code: "+44", flag: "🇬🇧", label: "GB" },
+        { code: "+971", flag: "🇦🇪", label: "AE" },
+        { code: "+65", flag: "🇸🇬", label: "SG" },
+        { code: "+61", flag: "🇦🇺", label: "AU" },
+        { code: "+1", flag: "🇨🇦", label: "CA" },
+        { code: "+880", flag: "🇧🇩", label: "BD" },
+        { code: "+966", flag: "🇸🇦", label: "SA" },
+        { code: "+974", flag: "🇶🇦", label: "QA" },
+        { code: "+965", flag: "🇰🇼", label: "KW" },
+        { code: "+60", flag: "🇲🇾", label: "MY" },
+        { code: "+27", flag: "🇿🇦", label: "ZA" },
+        { code: "+64", flag: "🇳🇿", label: "NZ" },
+        { code: "+977", flag: "🇳🇵", label: "NP" },
+        { code: "+94", flag: "🇱🇰", label: "LK" },
+      ].map((c) => (
+        <option key={`${c.flag}-${c.code}`} value={c.code}>{c.flag} {c.code}</option>
+      ))}
+    </select>
                     <input type="tel" placeholder="Phone number" value={newPhone} onChange={(e) => setNewPhone(e.target.value)}
                       style={{ flex: 1, padding: "10px 12px", border: "1px solid #e0e0e0", borderRadius: "8px", fontSize: "14px", boxSizing: "border-box" }}
                     />
