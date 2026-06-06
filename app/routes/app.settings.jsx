@@ -29,6 +29,7 @@ export const loader = async ({ request }) => {
     acc[e.node.key] = e.node.value;
     return acc;
   }, {});
+  const onboardingComplete = metafields.onboarding_complete === "true";
 
   const settings = {
     customerFields: {
@@ -47,7 +48,7 @@ export const loader = async ({ request }) => {
     staff: metafields.staff_list ? JSON.parse(metafields.staff_list) : [],
   };
 
-  return { shop, settings };
+  return { shop, settings, onboardingComplete };
 };
 
 export const action = async ({ request }) => {
@@ -62,7 +63,7 @@ export const action = async ({ request }) => {
     "customer_phone", "customer_email", "customer_address",
     "customer_birthday", "customer_anniversary",
     "payment_cash", "payment_card", "payment_upi",
-    "cash_calculator", "staff_list",
+    "cash_calculator", "staff_list", "onboarding_complete",
   ];
 
   const metafields = keys.map((key) => ({
@@ -88,7 +89,8 @@ export const action = async ({ request }) => {
 };
 
 export default function Settings() {
-  const { shop, settings } = useLoaderData();
+  const { shop, settings, onboardingComplete } = useLoaderData();
+  const [showGuide, setShowGuide] = useState(!onboardingComplete);
   const [searchParams] = useSearchParams();
   const role = searchParams.get("role");
   const fetcher = useFetcher();
@@ -118,6 +120,7 @@ export default function Settings() {
     formData.append("payment_upi", String(paymentMethods.upi));
     formData.append("cash_calculator", String(paymentMethods.cashCalculator));
     formData.append("staff_list", JSON.stringify(updatedStaff || staff));
+    formData.append("onboarding_complete", "true");
     fetcher.submit(formData, { method: "POST" });
   };
 
@@ -156,7 +159,6 @@ export default function Settings() {
     </div>
   );
 
-  // Admin check AFTER all hooks
   if (role !== "admin") {
     return (
       <div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "sans-serif" }}>
@@ -172,6 +174,21 @@ export default function Settings() {
   return (
     <div style={{ maxWidth: "680px", margin: "0 auto", padding: "32px 20px", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
 
+      {/* Welcome Banner */}
+      {showGuide && (
+        <div style={{ background: "#1a1a1a", borderRadius: "16px", padding: "20px 24px", marginBottom: "24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <p style={{ margin: "0 0 4px", fontSize: "18px", fontWeight: "700", color: "white" }}>👋 Welcome to Simple POS!</p>
+            <p style={{ margin: 0, fontSize: "13px", color: "#aaa" }}>Add your staff, set payment methods and customer fields below. Then hit Save!</p>
+          </div>
+          <button onClick={() => setShowGuide(false)}
+            style={{ padding: "10px 20px", background: "white", color: "#1a1a1a", border: "none", borderRadius: "10px", fontWeight: "700", cursor: "pointer", fontSize: "13px", whiteSpace: "nowrap", marginLeft: "16px" }}>
+            Got it! ✓
+          </button>
+        </div>
+      )}
+
+      {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "32px" }}>
         <div>
           <h1 style={{ margin: "0 0 4px", fontSize: "24px", fontWeight: "700" }}>⚙️ Settings</h1>
@@ -183,6 +200,7 @@ export default function Settings() {
         </button>
       </div>
 
+      {/* Store Info */}
       <div style={cardStyle}>
         <h2 style={sectionTitle}>🏪 Store</h2>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
@@ -200,6 +218,7 @@ export default function Settings() {
         </div>
       </div>
 
+      {/* Staff */}
       <div style={cardStyle}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
           <h2 style={{ ...sectionTitle, margin: 0 }}>👥 Staff</h2>
@@ -261,6 +280,7 @@ export default function Settings() {
         )}
       </div>
 
+      {/* Customer Fields */}
       <div style={cardStyle}>
         <h2 style={sectionTitle}>👤 Customer Fields</h2>
         <p style={{ margin: "0 0 16px", fontSize: "13px", color: "#637381" }}>Choose what to collect when adding a new customer at POS</p>
@@ -288,6 +308,7 @@ export default function Settings() {
         ))}
       </div>
 
+      {/* Payment Methods */}
       <div style={cardStyle}>
         <h2 style={sectionTitle}>💳 Payment Methods</h2>
         <p style={{ margin: "0 0 16px", fontSize: "13px", color: "#637381" }}>Choose which payment methods appear at checkout</p>
@@ -310,7 +331,8 @@ export default function Settings() {
         ))}
       </div>
 
-     <div style={{ ...cardStyle, background: "#1a1a1a", color: "white" }}>
+      {/* Plan */}
+      <div style={{ ...cardStyle, background: "#1a1a1a", color: "white" }}>
         <h2 style={{ ...sectionTitle, color: "white" }}>⚡ Current Plan — Free</h2>
         <p style={{ margin: "0 0 20px", fontSize: "13px", color: "#aaa" }}>Upgrade to unlock more staff and products</p>
         <div style={{ display: "flex", gap: "12px" }}>
@@ -319,18 +341,18 @@ export default function Settings() {
             <p style={{ margin: "0 0 8px", fontSize: "22px", fontWeight: "800" }}>₹999<span style={{ fontSize: "13px", fontWeight: "400", color: "#aaa" }}>/mo</span></p>
             <p style={{ margin: "0 0 12px", fontSize: "12px", color: "#aaa" }}>3 staff · 200 products</p>
             <button onClick={() => billingFetcher.submit({ plan: "Starter" }, { method: "POST", action: "/app/billing" })}
-  style={{ display: "block", width: "100%", padding: "10px", background: "white", color: "#1a1a1a", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "13px", textAlign: "center", cursor: "pointer" }}>
-  {billingFetcher.state === "submitting" ? "Loading..." : "Upgrade →"}
-</button>
+              style={{ display: "block", width: "100%", padding: "10px", background: "white", color: "#1a1a1a", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "13px", textAlign: "center", cursor: "pointer" }}>
+              {billingFetcher.state === "submitting" ? "Loading..." : "Upgrade →"}
+            </button>
           </div>
           <div style={{ flex: 1, background: "rgba(255,255,255,0.15)", borderRadius: "12px", padding: "16px", border: "1px solid rgba(255,255,255,0.3)" }}>
             <p style={{ margin: "0 0 4px", fontWeight: "700", fontSize: "16px" }}>Pro ⭐</p>
             <p style={{ margin: "0 0 8px", fontSize: "22px", fontWeight: "800" }}>₹2,499<span style={{ fontSize: "13px", fontWeight: "400", color: "#aaa" }}>/mo</span></p>
             <p style={{ margin: "0 0 12px", fontSize: "12px", color: "#aaa" }}>Unlimited everything</p>
             <button onClick={() => billingFetcher.submit({ plan: "Pro" }, { method: "POST", action: "/app/billing" })}
-  style={{ display: "block", width: "100%", padding: "10px", background: "white", color: "#1a1a1a", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "13px", textAlign: "center", cursor: "pointer" }}>
-  {billingFetcher.state === "submitting" ? "Loading..." : "Upgrade →"}
-</button>
+              style={{ display: "block", width: "100%", padding: "10px", background: "white", color: "#1a1a1a", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "13px", textAlign: "center", cursor: "pointer" }}>
+              {billingFetcher.state === "submitting" ? "Loading..." : "Upgrade →"}
+            </button>
           </div>
         </div>
       </div>
