@@ -1,12 +1,13 @@
 # Simple POS — Public Shopify App
 
-client_id = "e6a8aed068a867edeeabdefa7a47ec68"
+client_id = "da833485148d66ce83141e6b2e7756f3"
+name = "Simple POS"
 application_url = "https://simple-pos-production-36de.up.railway.app"
 embedded = true
-name = "Simple POS"
 
-[access_scopes]
-scopes = "write_products,read_products,write_metaobjects,write_metaobject_definitions,write_draft_orders,read_orders,write_orders,write_customers,read_customers,read_inventory,write_inventory,read_locations"
+[build]
+automatically_update_urls_on_dev = false
+include_config_on_deploy = true
 
 [webhooks]
 api_version = "2026-07"
@@ -19,9 +20,8 @@ api_version = "2026-07"
   uri = "/webhooks/app/scopes_update"
   topics = [ "app/scopes_update" ]
 
+[access_scopes]
+scopes = "write_products,read_products,write_metaobjects,write_metaobject_definitions,write_draft_orders,read_orders,write_orders,write_customers,read_customers,read_inventory,write_inventory,read_locations"
+
 [auth]
 redirect_urls = [ "https://simple-pos-production-36de.up.railway.app/api/auth" ]
-
-[build]
-include_config_on_deploy = true
-automatically_update_urls_on_dev = true

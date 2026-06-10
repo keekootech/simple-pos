@@ -370,6 +370,12 @@ const [newAddress, setNewAddress] = useState("");
 const [newBirthday, setNewBirthday] = useState("");
 const [newAnniversary, setNewAnniversary] = useState("");
 
+// First time install — redirect to settings
+if (!onboardingComplete) {
+  window.location.href = "/app/settings?role=admin";
+  return null;
+}
+
 // Staff login check — MUST be after all useState
 if (!currentStaff)  {
   return <StaffLoginGate staff={settings?.staff || []} onLogin={setCurrentStaff} />;
