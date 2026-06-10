@@ -177,6 +177,8 @@ const [productRes, collectionRes, customerRes, settingsRes] = await Promise.all(
     return acc;
   }, {});
 
+  const onboardingComplete = metafields.onboarding_complete === "true";
+
   const settings = {
     customerFields: {
       phone: metafields.customer_phone !== "false",
@@ -213,7 +215,7 @@ const [productRes, collectionRes, customerRes, settingsRes] = await Promise.all(
 
   const defaultDialCode = countryDialCodes[countryCode] || "+91";
 
-  return { allProducts, collections, productTypes, customers, settings, defaultDialCode };
+return { allProducts, collections, productTypes, customers, settings, defaultDialCode, onboardingComplete };
 };
 
 export const action = async ({ request }) => {
@@ -275,7 +277,7 @@ export const action = async ({ request }) => {
 };
 
 export default function Index() {
-  const { allProducts, collections, productTypes, customers, settings, defaultDialCode } = useLoaderData();
+  const { allProducts, collections, productTypes, customers, settings, defaultDialCode, onboardingComplete } = useLoaderData();
   const fetcher = useFetcher();
 
   // Staff login check
@@ -370,11 +372,6 @@ const [newAddress, setNewAddress] = useState("");
 const [newBirthday, setNewBirthday] = useState("");
 const [newAnniversary, setNewAnniversary] = useState("");
 
-// First time install — redirect to settings
-if (!onboardingComplete) {
-  window.location.href = "/app/settings?role=admin";
-  return null;
-}
 
 // Staff login check — MUST be after all useState
 if (!currentStaff)  {
