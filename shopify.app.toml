@@ -1,7 +1,7 @@
 # Simple POS — Public Shopify App
 
 client_id = "e6a8aed068a867edeeabdefa7a47ec68"
-application_url = "https://example.com"
+application_url = "https://simple-pos-production-36de.up.railway.app"
 embedded = true
 name = "Simple POS"
 
@@ -20,7 +20,7 @@ api_version = "2026-07"
   topics = [ "app/scopes_update" ]
 
 [auth]
-redirect_urls = [ "https://example.com/api/auth" ]
+redirect_urls = [ "https://simple-pos-production-36de.up.railway.app/api/auth" ]
 
 [build]
 include_config_on_deploy = true
