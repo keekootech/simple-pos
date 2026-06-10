@@ -604,7 +604,7 @@ console.log("SETTINGS:", JSON.stringify(settings));
                   {member.name.charAt(0).toUpperCase()}
                 </div>
                 <p style={{ margin: "0 0 4px", fontWeight: "600", fontSize: "14px" }}>{member.name}</p>
-                <p style={{ margin: 0, fontSize: "11px", color: "#888" }}>{member.role}</p>
+               <p style={{ margin: 0, fontSize: "16px", fontWeight: "900", letterSpacing: "1.5px", color: member.role === "admin" ? "#cc071e" : "#555", textTransform: "uppercase" }}>{member.role}</p>
               </div>
             ))}
           </div>
@@ -903,6 +903,12 @@ console.log("SETTINGS:", JSON.stringify(settings));
       {/* Product Area */}
       <div style={{ flex: 1, padding: "20px", overflowY: "auto" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginRight: "4px" }}>
+            <div style={{ width: "28px", height: "28px", background: "#1a1a1a", borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <span style={{ color: "white", fontSize: "14px" }}>S</span>
+            </div>
+            <span style={{ fontSize: "15px", fontWeight: "800", letterSpacing: "-0.3px", color: "#1a1a1a" }}>Simple POS</span>
+          </div>
           <h2 style={{ margin: 0, fontSize: "18px", fontWeight: "700" }}>🛍️ Products</h2>
           <input type="text" placeholder="Search products..." value={productSearch} onChange={(e) => setProductSearch(e.target.value)}
             style={{ flex: 1, padding: "9px 14px", border: "1px solid #e0e0e0", borderRadius: "8px", fontSize: "14px", background: "white" }}
@@ -1076,14 +1082,14 @@ onLogin(selected);
         <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", justifyContent: "center" }}>
           {staff.map((member) => (
             <div key={member.id} onClick={() => setSelected(member)}
-              style={{ width: "120px", padding: "20px 16px", background: "white", borderRadius: "16px", cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.08)", textAlign: "center" }}
+              style={{ width: "120px", padding: "20px 16px", background: member.role === "admin" ? "#fff5f5" : "white", borderRadius: "16px", cursor: "pointer", boxShadow: member.role === "admin" ? "0 4px 16px rgba(204,7,30,0.2)" : "0 2px 8px rgba(0,0,0,0.08)", textAlign: "center", border: member.role === "admin" ? "2px solid #cc071e" : "1.5px solid transparent" }}
               onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.96)")}
               onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1)")}
             >
               <div style={{ width: "52px", height: "52px", borderRadius: "50%", background: "#1a1a1a", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: "700", fontSize: "20px", margin: "0 auto 10px" }}>
                 {member.name.charAt(0).toUpperCase()}
               </div>
-              <p style={{ margin: "0 0 4px", fontWeight: "600", fontSize: "14px" }}>{member.name}</p>
+              <p style={{ margin: "0 0 6px", fontWeight: "700", fontSize: "16px" }}>{member.name}</p>
               <p style={{ margin: 0, fontSize: "11px", color: "#888" }}>{member.role}</p>
             </div>
           ))}

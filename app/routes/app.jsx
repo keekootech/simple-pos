@@ -37,6 +37,8 @@ export default function App() {
         <s-link href="/app">🛍️ POS</s-link>
         {isAdmin && <s-link href="/app/reports?role=admin">📊 Reports</s-link>}
         {isAdmin && <s-link href="/app/settings?role=admin">⚙️ Settings</s-link>}
+        <s-link href="/app/privacy">Privacy Policy</s-link>
+
       </s-app-nav>
       <Outlet />
     </AppProvider>
