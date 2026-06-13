@@ -1,3 +1,6 @@
+export const loader = async () => {
+  return {};
+};
 export default function Privacy() {
   return (
     <div style={{ maxWidth: "720px", margin: "0 auto", padding: "48px 24px", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", color: "#1a1a1a", lineHeight: "1.7" }}>
