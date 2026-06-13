@@ -13,12 +13,14 @@ export default function App() {
   const { apiKey } = useLoaderData();
  const [isAdmin, setIsAdmin] = useState(false);
 
-  useEffect(() => {
+useEffect(() => {
     try {
       const s = sessionStorage.getItem("spos_staff");
       if (s) {
         const staff = JSON.parse(s);
         setIsAdmin(staff.role === "admin");
+      } else {
+        setIsAdmin(false);
       }
     } catch(e) {}
   }, []);
@@ -26,6 +28,7 @@ export default function App() {
   useEffect(() => {
     const handler = (e) => {
       setIsAdmin(e.detail.role === "admin");
+      if (!e.detail.role) setIsAdmin(false);
     };
     window.addEventListener('staffLogin', handler);
     return () => window.removeEventListener('staffLogin', handler);

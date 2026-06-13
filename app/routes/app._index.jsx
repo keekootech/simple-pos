@@ -223,6 +223,31 @@ export const action = async ({ request }) => {
   const formData = await request.formData();
   const intent = formData.get("intent");
 
+  if (intent === "setupAdmin") {
+    const adminMember = JSON.parse(formData.get("adminMember"));
+    const { admin } = await authenticate.admin(request);
+    
+    const appRes = await admin.graphql(`query { appInstallation { id } }`);
+    const appData = await appRes.json();
+    const appInstallationId = appData.data.appInstallation.id;
+
+    await admin.graphql(
+      `#graphql
+      mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
+        metafieldsSet(metafields: $metafields) {
+          metafields { key value }
+          userErrors { field message }
+        }
+      }`,
+      { variables: { metafields: [
+        { namespace: "simple_pos", key: "staff_list", value: JSON.stringify([adminMember]), type: "single_line_text_field", ownerId: appInstallationId },
+        { namespace: "simple_pos", key: "onboarding_complete", value: "true", type: "single_line_text_field", ownerId: appInstallationId },
+      ]}}
+    );
+
+    return { intent: "setupAdmin", success: true };
+  }
+
   if (intent === "createCustomer") {
     const res = await admin.graphql(
       `#graphql
@@ -373,8 +398,18 @@ const [newBirthday, setNewBirthday] = useState("");
 const [newAnniversary, setNewAnniversary] = useState("");
 
 
+// Fresh install — no staff yet, show setup screen
+if (settings?.staff?.length === 0) {
+  return <FirstTimeSetup onComplete={(adminMember) => {
+    globalStaffSession = adminMember;
+    try { sessionStorage.setItem("spos_staff", JSON.stringify(adminMember)); } catch(e) {}
+    setCurrentStaff(adminMember);
+    window.dispatchEvent(new CustomEvent('staffLogin', { detail: { role: 'admin' } }));
+  }} />;
+}
+
 // Staff login check — MUST be after all useState
-if (!currentStaff)  {
+if (!currentStaff && settings?.staff?.length > 0)  {
   return <StaffLoginGate staff={settings?.staff || []} onLogin={setCurrentStaff} />;
 }
 
@@ -1097,6 +1132,76 @@ onLogin(selected);
             </div>
           ))}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function FirstTimeSetup({ onComplete }) {
+  const fetcher = useFetcher();
+  const [name, setName] = useState("");
+  const [pin, setPin] = useState("");
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const handleSetup = () => {
+    if (!name) { setError("Please enter your name"); return; }
+    if (pin.length !== 4 || !/^\d+$/.test(pin)) { setError("PIN must be exactly 4 digits"); return; }
+    
+    const adminMember = {
+      id: Date.now().toString(),
+      name,
+      pin,
+      role: "admin",
+    };
+
+    setSaving(true);
+    const formData = new FormData();
+    formData.append("intent", "setupAdmin");
+    formData.append("adminMember", JSON.stringify(adminMember));
+    fetcher.submit(formData, { method: "POST" });
+
+    setTimeout(() => {
+      onComplete(adminMember);
+    }, 500);
+  };
+
+  return (
+    <div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f6f6f7", fontFamily: "-apple-system, sans-serif" }}>
+      <div style={{ width: "400px", background: "white", borderRadius: "20px", padding: "40px", boxShadow: "0 4px 24px rgba(0,0,0,0.1)" }}>
+        
+        {/* Logo */}
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "32px" }}>
+          <div style={{ width: "36px", height: "36px", background: "#1a1a1a", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span style={{ color: "white", fontSize: "18px", fontWeight: "800" }}>S</span>
+          </div>
+          <span style={{ fontSize: "18px", fontWeight: "800" }}>Simple POS</span>
+        </div>
+
+        <h2 style={{ margin: "0 0 8px", fontSize: "22px", fontWeight: "700" }}>Welcome! 👋</h2>
+        <p style={{ margin: "0 0 28px", color: "#637381", fontSize: "14px" }}>Let's set you up as the store admin. You can add more staff later in Settings.</p>
+
+        <label style={{ display: "block", fontSize: "13px", fontWeight: "600", color: "#555", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.6px" }}>Your Name</label>
+        <input type="text" placeholder="e.g. Saloni Shah" value={name}
+          onChange={(e) => setName(e.target.value)}
+          style={{ width: "100%", padding: "12px 14px", border: "1.5px solid #e0e0e0", borderRadius: "10px", fontSize: "15px", marginBottom: "20px", boxSizing: "border-box", outline: "none" }}
+        />
+
+        <label style={{ display: "block", fontSize: "13px", fontWeight: "600", color: "#555", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.6px" }}>Set Your 4-Digit PIN</label>
+        <input type="password" placeholder="e.g. 1234" value={pin} maxLength={4}
+          onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+          style={{ width: "100%", padding: "12px 14px", border: "1.5px solid #e0e0e0", borderRadius: "10px", fontSize: "15px", marginBottom: "8px", boxSizing: "border-box", outline: "none", letterSpacing: "8px" }}
+        />
+
+        {error && <p style={{ color: "#e53e3e", fontSize: "13px", marginBottom: "12px" }}>{error}</p>}
+        {!error && <div style={{ height: "29px" }} />}
+
+        <button onClick={handleSetup} disabled={saving || !name || pin.length !== 4}
+          style={{ width: "100%", padding: "15px", background: saving || !name || pin.length !== 4 ? "#ccc" : "#1a1a1a", color: "white", border: "none", borderRadius: "12px", fontSize: "16px", fontWeight: "700", cursor: saving || !name || pin.length !== 4 ? "not-allowed" : "pointer" }}>
+          {saving ? "Setting up..." : "Set Up & Continue →"}
+        </button>
+
+        <p style={{ margin: "16px 0 0", textAlign: "center", fontSize: "12px", color: "#aaa" }}>You'll be logged in as Admin · Add more staff in Settings</p>
       </div>
     </div>
   );
