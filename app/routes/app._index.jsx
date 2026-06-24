@@ -272,32 +272,58 @@ export const action = async ({ request }) => {
     const customerId = formData.get("customerId");
     const staffName = formData.get("staffName") || "Unknown";
     const customerName = formData.get("customerName");
-    const staffId = formData.get("staffId");
 
-    const orderInput = {
+    // Step 1: Create Draft Order
+    const draftInput = {
       lineItems: cartItems.map((item) => ({ variantId: item.variantId, quantity: item.qty })),
       note: `Payment: ${paymentMethod}${customerName ? ` | Customer: ${customerName}` : ""} | Staff: ${staffName}`,
-      financialStatus: "PENDING",
       tags: [paymentMethod, "POS", `Staff:${staffName}`],
     };
-    if (customerId) orderInput.customerId = customerId;
+    if (customerId) draftInput.customerId = customerId;
 
-    const response = await admin.graphql(
+    const draftResponse = await admin.graphql(
       `#graphql
-      mutation orderCreate($order: OrderCreateOrderInput!, $options: OrderCreateOptionsInput) {
-        orderCreate(order: $order, options: $options) {
+      mutation draftOrderCreate($input: DraftOrderInput!) {
+        draftOrderCreate(input: $input) {
+          draftOrder { 
+            id 
+            totalPriceSet { shopMoney { amount } }
+          }
           userErrors { field message }
-          order { id totalPriceSet { shopMoney { amount } } }
         }
       }`,
-      { variables: { order: orderInput, options: { inventoryBehaviour: "DECREMENT_IGNORING_POLICY", sendReceipt: true } } }
+      { variables: { input: draftInput } }
     );
 
-    const data = await response.json();
-    const order = data.data.orderCreate.order;
-    const errors = data.data.orderCreate.userErrors;
-    if (errors.length > 0) return { intent: "placeOrder", success: false, error: errors[0].message };
-    return { intent: "placeOrder", success: true, total: order.totalPriceSet.shopMoney.amount, paymentMethod, customerName };
+    const draftData = await draftResponse.json();
+    const draftOrder = draftData.data.draftOrderCreate.draftOrder;
+    const draftErrors = draftData.data.draftOrderCreate.userErrors;
+
+    if (draftErrors.length > 0) return { intent: "placeOrder", success: false, error: draftErrors[0].message };
+
+    // Step 2: Complete Draft Order (marks as paid)
+    const completeResponse = await admin.graphql(
+      `#graphql
+      mutation draftOrderComplete($id: ID!, $paymentPending: Boolean) {
+        draftOrderComplete(id: $id, paymentPending: $paymentPending) {
+          draftOrder {
+            order {
+              id
+              totalPriceSet { shopMoney { amount } }
+            }
+          }
+          userErrors { field message }
+        }
+      }`,
+      { variables: { id: draftOrder.id, paymentPending: false } }
+    );
+
+    const completeData = await completeResponse.json();
+    const completedOrder = completeData.data.draftOrderComplete.draftOrder?.order;
+    const completeErrors = completeData.data.draftOrderComplete.userErrors;
+
+    if (completeErrors.length > 0) return { intent: "placeOrder", success: false, error: completeErrors[0].message };
+    return { intent: "placeOrder", success: true, total: completedOrder.totalPriceSet.shopMoney.amount, paymentMethod, customerName };
   }
 };
 
