@@ -196,15 +196,18 @@ const [productRes, collectionRes, customerRes, settingsRes] = await Promise.all(
     staff: metafields.staff_list ? JSON.parse(metafields.staff_list) : [],
   };
 
-  const shopRes = await admin.graphql(`
+ const shopRes = await admin.graphql(`
     query {
       shop {
         billingAddress { countryCode }
+        currencyCode
       }
     }
   `);
   const shopData = await shopRes.json();
   const countryCode = shopData.data.shop.billingAddress?.countryCode || "IN";
+  const storeCurrency = shopData.data.shop.currencyCode || "USD";
+  const currencySymbol = storeCurrency === "INR" ? "₹" : storeCurrency === "GBP" ? "£" : storeCurrency === "EUR" ? "€" : "$";
 
   const countryDialCodes = {
     IN: "+91", US: "+1", GB: "+44", AE: "+971", SG: "+65",
@@ -215,7 +218,7 @@ const [productRes, collectionRes, customerRes, settingsRes] = await Promise.all(
 
   const defaultDialCode = countryDialCodes[countryCode] || "+91";
 
-return { allProducts, collections, productTypes, customers, settings, defaultDialCode, onboardingComplete };
+return { allProducts, collections, productTypes, customers, settings, defaultDialCode, onboardingComplete, currencySymbol };
 };
 
 export const action = async ({ request }) => {
@@ -328,7 +331,7 @@ export const action = async ({ request }) => {
 };
 
 export default function Index() {
-  const { allProducts, collections, productTypes, customers, settings, defaultDialCode, onboardingComplete } = useLoaderData();
+  const { allProducts, collections, productTypes, customers, settings, defaultDialCode, onboardingComplete, currencySymbol } = useLoaderData();
   const fetcher = useFetcher();
 
   // Staff login check
@@ -699,7 +702,7 @@ console.log("SETTINGS:", JSON.stringify(settings));
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ background: "white", borderRadius: "20px", padding: "32px", width: "340px", boxShadow: "0 16px 60px rgba(0,0,0,0.25)", fontFamily: "-apple-system, sans-serif" }}>
             <h3 style={{ margin: "0 0 4px", fontSize: "18px", fontWeight: "700" }}>💵 Cash Payment</h3>
-            <p style={{ margin: "0 0 20px", color: "#637381", fontSize: "13px" }}>Bill Total: <strong style={{ color: "#1a1a1a" }}>₹{total}</strong></p>
+            <p style={{ margin: "0 0 20px", color: "#637381", fontSize: "13px" }}>Bill Total: <strong style={{ color: "#1a1a1a" }}>{currencySymbol}{total}</strong></p>
 
             {/* Quick buttons */}
             <p style={{ margin: "0 0 8px", fontSize: "12px", color: "#888", textTransform: "uppercase", letterSpacing: "0.6px" }}>Cash Received</p>
@@ -761,7 +764,7 @@ console.log("SETTINGS:", JSON.stringify(settings));
             <div style={{ width: "88px", height: "88px", background: "#e6f4ea", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontSize: "44px" }}>✅</div>
             <h2 style={{ margin: "0 0 6px", fontSize: "24px", fontWeight: "700", color: "#1a1a1a" }}>Order Confirmed!</h2>
             {orderResult.customerName && <p style={{ margin: "0 0 4px", fontSize: "14px", color: "#666" }}>👤 {orderResult.customerName}</p>}
-            <p style={{ margin: "8px 0 4px", fontSize: "28px", fontWeight: "800", color: "#1a1a1a" }}>₹{orderResult.total}</p>
+            <p style={{ margin: "8px 0 4px", fontSize: "28px", fontWeight: "800", color: "#1a1a1a" }}>{currencySymbol}{orderResult.total}</p>
             <p style={{ margin: "0 0 28px", fontSize: "15px", color: "#637381" }}>
               {orderResult.paymentMethod === "Cash" ? "💵" : orderResult.paymentMethod === "Card" ? "💳" : "📱"} Paid via {orderResult.paymentMethod}
             </p>
@@ -1033,14 +1036,14 @@ console.log("SETTINGS:", JSON.stringify(settings));
                   <div style={{ flex: 1 }}>
                     <p style={{ margin: "0 0 2px", fontWeight: "600", fontSize: "13px" }}>{item.title}</p>
                     {item.variantTitle && <p style={{ margin: "0 0 4px", fontSize: "11px", color: "#888" }}>{item.variantTitle}</p>}
-                    <p style={{ margin: 0, color: "#637381", fontSize: "12px" }}>₹{item.price}</p>
+                    <p style={{ margin: 0, color: "#637381", fontSize: "12px" }}>{currencySymbol}{item.price}</p>
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "8px" }}>
                   <button onClick={() => updateQty(item.id, item.qty - 1)} style={btnStyle}>−</button>
                   <span style={{ fontWeight: "600", fontSize: "14px", minWidth: "20px", textAlign: "center" }}>{item.qty}</span>
                   <button onClick={() => updateQty(item.id, item.qty + 1)} style={btnStyle}>+</button>
-                  <span style={{ marginLeft: "auto", fontWeight: "600", fontSize: "13px" }}>₹{(parseFloat(item.price) * item.qty).toFixed(2)}</span>
+                  <span style={{ marginLeft: "auto", fontWeight: "600", fontSize: "13px" }}>{currencySymbol}{(parseFloat(item.price) * item.qty).toFixed(2)}</span>
                   <button onClick={() => removeFromCart(item.id)} style={{ ...btnStyle, color: "#e53e3e", borderColor: "#e53e3e" }}>✕</button>
                 </div>
               </div>
@@ -1054,7 +1057,7 @@ console.log("SETTINGS:", JSON.stringify(settings));
           )}
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "14px" }}>
             <span style={{ fontWeight: "600", fontSize: "15px", color: "#333" }}>Total</span>
-            <span style={{ fontWeight: "800", fontSize: "20px", color: "#1a1a1a" }}>₹{total}</span>
+            <span style={{ fontWeight: "800", fontSize: "20px", color: "#1a1a1a" }}>{currencySymbol}{total}</span>
           </div>
           <button
             onClick={() => { setStep("customer"); setShowNewCustomer(false); setShowModal(true); }}
