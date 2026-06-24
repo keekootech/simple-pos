@@ -591,7 +591,7 @@ const paymentMethods = [
         <div style={{ width: "100%", height: "120px", background: "#f0f0f0", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", color: "#999", fontSize: "12px" }}>No image</div>
       )}
       <p style={{ margin: "8px 0 2px", fontWeight: "600", fontSize: "13px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{product.title}</p>
-      <p style={{ margin: 0, color: "#637381", fontSize: "12px" }}>from ₹{product.variants[0]?.price || "0.00"}</p>
+      <p style={{ margin: 0, color: "#637381", fontSize: "12px" }}>from {currencySymbol}{product.variants[0]?.price || "0.00"}</p>
       {product.options.length > 0 && product.options[0].name !== "Title" && (
         <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#aaa" }}>{product.options.map(o => o.name).join(" · ")}</p>
       )}
@@ -710,7 +710,7 @@ console.log("SETTINGS:", JSON.stringify(settings));
               {[500, 1000, 2000].map((amt) => (
                 <button key={amt} onClick={() => setCashGiven(String(amt))}
                   style={{ flex: 1, padding: "10px", background: cashGiven === String(amt) ? "#1a1a1a" : "#f4f4f4", color: cashGiven === String(amt) ? "white" : "#1a1a1a", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600", fontSize: "14px" }}>
-                  ₹{amt}
+                  {currencySymbol}{amt}
                 </button>
               ))}
             </div>
@@ -729,7 +729,7 @@ console.log("SETTINGS:", JSON.stringify(settings));
               <div style={{ background: "#e6f4ea", borderRadius: "12px", padding: "16px", marginBottom: "16px", textAlign: "center" }}>
                 <p style={{ margin: "0 0 4px", fontSize: "13px", color: "#637381" }}>Change to return</p>
                 <p style={{ margin: 0, fontSize: "36px", fontWeight: "800", color: "#1e7e34" }}>
-                  ₹{(parseFloat(cashGiven) - parseFloat(total)).toFixed(0)}
+                 {currencySymbol}{(parseFloat(cashGiven) - parseFloat(total)).toFixed(0)}
                 </p>
               </div>
             )}
@@ -737,7 +737,7 @@ console.log("SETTINGS:", JSON.stringify(settings));
             {cashGiven && parseFloat(cashGiven) < parseFloat(total) && (
               <div style={{ background: "#fff0f0", borderRadius: "12px", padding: "12px", marginBottom: "16px", textAlign: "center" }}>
                 <p style={{ margin: 0, fontSize: "14px", color: "#e53e3e", fontWeight: "600" }}>
-                  ₹{(parseFloat(total) - parseFloat(cashGiven)).toFixed(0)} short
+                 {currencySymbol}{(parseFloat(total) - parseFloat(cashGiven)).toFixed(0)} short
                 </p>
               </div>
             )}
@@ -791,7 +791,7 @@ console.log("SETTINGS:", JSON.stringify(settings));
             <div style={{ padding: "24px", flex: 1 }}>
               <h2 style={{ margin: "0 0 4px", fontSize: "20px", fontWeight: "700" }}>{drawerProduct.title}</h2>
               <p style={{ margin: "0 0 20px", fontSize: "22px", fontWeight: "800", color: "#1a1a1a" }}>
-                ₹{selectedVariant?.price || drawerProduct.variants[0]?.price}
+               {currencySymbol}{selectedVariant?.price || drawerProduct.variants[0]?.price}
               </p>
 
               {/* Options */}
@@ -948,7 +948,7 @@ console.log("SETTINGS:", JSON.stringify(settings));
             {step === "payment" && (
               <>
                 <h3 style={{ margin: "0 0 4px", fontSize: "18px", fontWeight: "700" }}>How is the customer paying?</h3>
-                <p style={{ margin: "0 0 4px", color: "#637381", fontSize: "13px" }}>Total: ₹{total}</p>
+                <p style={{ margin: "0 0 4px", color: "#637381", fontSize: "13px" }}>Total: {currencySymbol}{total}</p>
                 {selectedCustomer && <p style={{ margin: "0 0 16px", fontSize: "13px", color: "#008060", fontWeight: "600" }}>👤 {selectedCustomer.name}</p>}
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                   {paymentMethods.map((pm) => (
