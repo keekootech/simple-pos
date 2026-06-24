@@ -7,15 +7,15 @@ export const loader = async ({ request }) => {
 };
 
 export const action = async ({ request }) => {
-  const { billing } = await authenticate.admin(request);
+  const { billing, session } = await authenticate.admin(request);
   const formData = await request.formData();
   const plan = formData.get("plan");
 
   if (plan === PLANS.STARTER || plan === PLANS.PRO) {
     await billing.request({
       plan,
-      isTest: true,
-      returnUrl: `${process.env.SHOPIFY_APP_URL}/app`,
+      isTest: false,
+      returnUrl: `https://admin.shopify.com/store/${session.shop.replace(".myshopify.com", "")}/apps/simple-pos-1`,
     });
   }
 

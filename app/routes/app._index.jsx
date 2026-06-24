@@ -277,7 +277,7 @@ export const action = async ({ request }) => {
     const orderInput = {
       lineItems: cartItems.map((item) => ({ variantId: item.variantId, quantity: item.qty })),
       note: `Payment: ${paymentMethod}${customerName ? ` | Customer: ${customerName}` : ""} | Staff: ${staffName}`,
-      financialStatus: "PAID",
+      financialStatus: "PENDING",
       tags: [paymentMethod, "POS", `Staff:${staffName}`],
     };
     if (customerId) orderInput.customerId = customerId;
