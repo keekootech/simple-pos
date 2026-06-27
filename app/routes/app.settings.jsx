@@ -342,18 +342,18 @@ export default function Settings() {
             <p style={{ margin: "0 0 4px", fontWeight: "700", fontSize: "16px" }}>Starter</p>
             <p style={{ margin: "0 0 8px", fontSize: "22px", fontWeight: "800" }}>Starter<span style={{ fontSize: "13px", fontWeight: "400", color: "#aaa" }}> plan</span></p>
             <p style={{ margin: "0 0 12px", fontSize: "12px", color: "#aaa" }}>3 staff · 200 products</p>
-            <button onClick={() => window.open("https://apps.shopify.com/services/pricing/da833485148d66ce83141e6b2e7756f3/starter", "_top")}
+           <button onClick={() => { const url = "https://apps.shopify.com/services/pricing/da833485148d66ce83141e6b2e7756f3/starter"; if (window.top) { window.top.location.href = url; } else { window.location.href = url; } }}
               style={{ display: "block", width: "100%", padding: "10px", background: "white", color: "#1a1a1a", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "13px", textAlign: "center", cursor: "pointer" }}>
-              {billingFetcher.state === "submitting" ? "Loading..." : "Upgrade →"}
+              Upgrade →
             </button>
           </div>
           <div style={{ flex: 1, background: "rgba(255,255,255,0.15)", borderRadius: "12px", padding: "16px", border: "1px solid rgba(255,255,255,0.3)" }}>
             <p style={{ margin: "0 0 4px", fontWeight: "700", fontSize: "16px" }}>Pro ⭐</p>
             <p style={{ margin: "0 0 8px", fontSize: "22px", fontWeight: "800" }}>Pro<span style={{ fontSize: "13px", fontWeight: "400", color: "#aaa" }}> plan</span></p>
             <p style={{ margin: "0 0 12px", fontSize: "12px", color: "#aaa" }}>Unlimited everything</p>
-            <button onClick={() => window.open("https://apps.shopify.com/services/pricing/da833485148d66ce83141e6b2e7756f3/pro", "_top")}
+            <button onClick={() => { const url = "https://apps.shopify.com/services/pricing/da833485148d66ce83141e6b2e7756f3/pro"; if (window.top) { window.top.location.href = url; } else { window.location.href = url; } }}
               style={{ display: "block", width: "100%", padding: "10px", background: "white", color: "#1a1a1a", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "13px", textAlign: "center", cursor: "pointer" }}>
-              {billingFetcher.state === "submitting" ? "Loading..." : "Upgrade →"}
+              Upgrade →
             </button>
           </div>
         </div>
